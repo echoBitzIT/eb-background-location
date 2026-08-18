@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "152480569659",
+    "project_id": "field-tracking-5b7c7",
+    "storage_bucket": "field-tracking-5b7c7.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:152480569659:android:165a5c3c05a3c690e7bf1e",
+        "android_client_info": {
+          "package_name": "com.eb_geoemployee_tracker_mobile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyACsvxaQyWcilk0lNlwwxV-_SeSiDVKA58"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,0 +1,240 @@
+import { StyleSheet } from 'react-native';
+import { ThemeColors } from '../../constants/Colors';
+
+export const createStyles = (
+  colors: ThemeColors,
+  isTablet: boolean,
+  contentMaxWidth: number,
+  isDark: boolean,
+) => {
+  const dateStripBg = isDark ? '#0F1A2C' : '#F3F4F6';
+  const cardShadow = isDark
+    ? {}
+    : {
+        shadowColor: '#000000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.06,
+        shadowRadius: 8,
+        elevation: 2,
+      };
+
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      width: '100%',
+      maxWidth: contentMaxWidth,
+      alignSelf: 'center',
+      paddingHorizontal: isTablet ? 32 : 20,
+      paddingTop: isTablet ? 16 : 12,
+      paddingBottom: isTablet ? 12 : 8,
+    },
+    headerButton: {
+      width: isTablet ? 48 : 40,
+      height: isTablet ? 48 : 40,
+      borderRadius: 12,
+      backgroundColor: colors.inputBox,
+      borderWidth: 1,
+      borderColor: colors.border,
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 1,
+    },
+    headerTitle: {
+      flex: 1,
+      marginLeft: isTablet ? 12 : 10,
+      marginRight: 8,
+      color: colors.textEnabled,
+      fontSize: isTablet ? 22 : 18,
+      fontWeight: '700',
+      textAlign: 'left',
+    },
+    headerActions: {
+      marginLeft: 'auto',
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      zIndex: 1,
+    },
+    yearChip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      height: isTablet ? 48 : 40,
+      paddingHorizontal: isTablet ? 14 : 12,
+      borderRadius: 12,
+      backgroundColor: colors.inputBox,
+      borderWidth: 1,
+      borderColor: colors.border,
+      gap: 4,
+    },
+    yearChipText: {
+      color: colors.textEnabled,
+      fontSize: isTablet ? 16 : 14,
+      fontWeight: '600',
+    },
+    content: {
+      flex: 1,
+      width: '100%',
+      maxWidth: contentMaxWidth,
+      alignSelf: 'center',
+      paddingHorizontal: isTablet ? 32 : 20,
+      paddingTop: isTablet ? 20 : 16,
+      paddingBottom: 0,
+      gap: isTablet ? 20 : 16,
+    },
+    monthPillsScroll: {
+      flexGrow: 0,
+    },
+    monthPillsContent: {
+      paddingRight: isTablet ? 8 : 4,
+      gap: isTablet ? 10 : 8,
+    },
+    monthPill: {
+      minWidth: isTablet ? 64 : 56,
+      height: isTablet ? 40 : 36,
+      borderRadius: isTablet ? 20 : 18,
+      paddingHorizontal: isTablet ? 18 : 14,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: colors.inputBox,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    monthPillActive: {
+      borderWidth: 0,
+      paddingHorizontal: 0,
+      overflow: 'hidden',
+      backgroundColor: 'transparent',
+    },
+    monthPillGradient: {
+      minWidth: isTablet ? 64 : 56,
+      height: '100%',
+      paddingHorizontal: isTablet ? 18 : 14,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    monthPillText: {
+      color: colors.textDisabled,
+      fontSize: isTablet ? 15 : 14,
+      fontWeight: '600',
+    },
+    monthPillTextActive: {
+      color: '#FFFFFF',
+      fontSize: isTablet ? 15 : 14,
+      fontWeight: '700',
+    },
+    dayList: {
+      flex: 1,
+    },
+    dayListContent: {
+      paddingBottom: isTablet ? 24 : 16,
+      gap: isTablet ? 14 : 12,
+    },
+    dayCard: {
+      flexDirection: 'row',
+      backgroundColor: colors.inputBox,
+      borderRadius: 16,
+      overflow: 'hidden',
+      borderWidth: isDark ? 1 : 0,
+      borderColor: colors.border,
+      minHeight: isTablet ? 88 : 76,
+      ...cardShadow,
+    },
+    dateStrip: {
+      width: isTablet ? 72 : 64,
+      backgroundColor: dateStripBg,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: isTablet ? 14 : 12,
+    },
+    dateStripMonth: {
+      color: colors.textDisabled,
+      fontSize: isTablet ? 12 : 11,
+      fontWeight: '600',
+      letterSpacing: 0.6,
+      textTransform: 'uppercase',
+    },
+    dateStripDay: {
+      color: colors.textEnabled,
+      fontSize: isTablet ? 26 : 22,
+      fontWeight: '700',
+      marginTop: 2,
+    },
+    dayCardBody: {
+      flex: 1,
+      justifyContent: 'center',
+      paddingHorizontal: isTablet ? 16 : 14,
+      paddingVertical: isTablet ? 14 : 12,
+      gap: isTablet ? 8 : 6,
+    },
+    dayCardTitle: {
+      color: colors.textEnabled,
+      fontSize: isTablet ? 16 : 14,
+      fontWeight: '700',
+    },
+    dayMetaRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: isTablet ? 12 : 10,
+    },
+    dayMetaItem: {
+      color: colors.textDisabled,
+      fontSize: isTablet ? 13 : 12,
+      fontWeight: '500',
+    },
+    dayCardChevron: {
+      justifyContent: 'center',
+      paddingRight: isTablet ? 14 : 12,
+    },
+    emptyListText: {
+      color: colors.textDisabled,
+      fontSize: isTablet ? 15 : 14,
+      fontWeight: '500',
+      textAlign: 'center',
+      marginTop: isTablet ? 40 : 32,
+    },
+    modalBackdrop: {
+      flex: 1,
+      backgroundColor: 'rgba(0,0,0,0.4)',
+      justifyContent: 'center',
+      alignItems: 'center',
+      paddingHorizontal: 24,
+    },
+    yearPickerCard: {
+      width: '100%',
+      maxWidth: 320,
+      backgroundColor: colors.inputBox,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: colors.border,
+      paddingVertical: isTablet ? 12 : 8,
+      overflow: 'hidden',
+    },
+    yearPickerTitle: {
+      color: colors.textEnabled,
+      fontSize: isTablet ? 16 : 14,
+      fontWeight: '700',
+      paddingHorizontal: isTablet ? 20 : 16,
+      paddingVertical: isTablet ? 12 : 10,
+    },
+    yearOption: {
+      paddingHorizontal: isTablet ? 20 : 16,
+      paddingVertical: isTablet ? 14 : 12,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    yearOptionSelected: {
+      backgroundColor: isDark ? '#0F1A2C' : '#F3F4F6',
+    },
+    yearOptionText: {
+      color: colors.textEnabled,
+      fontSize: isTablet ? 16 : 15,
+      fontWeight: '600',
+    },
+  });
+};

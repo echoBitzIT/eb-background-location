@@ -1,0 +1,28 @@
+buildscript {
+    ext {
+        buildToolsVersion = "36.0.0"
+        minSdkVersion = 24
+        compileSdkVersion = 36
+        targetSdkVersion = 36
+        ndkVersion = "27.1.12297006"
+        kotlinVersion = "2.1.20"
+        // Keep < 21 so FusedLocationProviderClient stays a class.
+        // react-native-maps defaults to 21.x (interface), which crashes
+        // react-native-geolocation-service on splash GPS check:
+        // IncompatibleClassChangeError on FusedLocationProviderClient.
+        playServicesLocationVersion = "20.0.0"
+        googlePlayServicesLocationVersion = "20.0.0"
+    }
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        classpath("com.android.tools.build:gradle")
+        classpath("com.facebook.react:react-native-gradle-plugin")
+        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin")
+        classpath("com.google.gms:google-services:4.4.2")
+    }
+}
+
+apply plugin: "com.facebook.react.rootproject"

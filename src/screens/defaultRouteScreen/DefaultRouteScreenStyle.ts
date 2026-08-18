@@ -1,0 +1,145 @@
+import { StyleSheet } from 'react-native';
+import { ThemeColors } from '../../constants/Colors';
+
+export const createStyles = (
+  colors: ThemeColors,
+  isTablet: boolean,
+  contentMaxWidth: number,
+) => {
+  const sessionButtonSize = isTablet ? 200 : 168;
+
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      width: '100%',
+      maxWidth: contentMaxWidth,
+      alignSelf: 'center',
+      paddingHorizontal: isTablet ? 32 : 20,
+      paddingTop: isTablet ? 16 : 12,
+      paddingBottom: isTablet ? 12 : 8,
+    },
+    headerLeft: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginRight: 12,
+    },
+    backButton: {
+      width: isTablet ? 48 : 40,
+      height: isTablet ? 48 : 40,
+      borderRadius: 12,
+      backgroundColor: colors.inputBox,
+      borderWidth: 1,
+      borderColor: colors.border,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    headerTitle: {
+      color: colors.textEnabled,
+      fontSize: isTablet ? 22 : 18,
+      fontWeight: '700',
+      marginLeft: isTablet ? 14 : 12,
+      flexShrink: 1,
+    },
+    checkInButton: {
+      paddingHorizontal: isTablet ? 22 : 18,
+      paddingVertical: isTablet ? 12 : 10,
+      borderRadius: 5,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    checkInText: {
+      color: colors.buttonText,
+      fontSize: isTablet ? 16 : 14,
+      fontWeight: '700',
+    },
+    content: {
+      flex: 1,
+      width: '100%',
+      maxWidth: contentMaxWidth,
+      alignSelf: 'center',
+      paddingHorizontal: isTablet ? 32 : 20,
+      paddingTop: isTablet ? 28 : 20,
+      paddingBottom: isTablet ? 32 : 24,
+      justifyContent: 'space-between',
+    },
+    topSection: {
+      alignItems: 'center',
+      paddingTop: isTablet ? 24 : 16,
+    },
+    headline: {
+      color: colors.textEnabled,
+      fontSize: isTablet ? 32 : 28,
+      fontWeight: '700',
+      textAlign: 'center',
+    },
+    subtitle: {
+      color: colors.textDisabled,
+      fontSize: isTablet ? 17 : 15,
+      fontWeight: '500',
+      textAlign: 'center',
+      marginTop: 10,
+      paddingHorizontal: isTablet ? 24 : 12,
+      lineHeight: isTablet ? 24 : 22,
+    },
+    middleSection: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      flex: 1,
+    },
+    sessionButton: {
+      width: sessionButtonSize,
+      height: sessionButtonSize,
+      borderRadius: sessionButtonSize / 2,
+      overflow: 'hidden',
+      shadowColor: colors.button,
+      shadowOffset: { width: 0, height: 10 },
+      shadowOpacity: 0.35,
+      shadowRadius: 20,
+      elevation: 10,
+    },
+    sessionGradient: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: sessionButtonSize / 2,
+    },
+    sessionLabel: {
+      color: colors.buttonText,
+      fontSize: isTablet ? 20 : 18,
+      fontWeight: '700',
+      marginTop: 10,
+      textAlign: 'center',
+      paddingHorizontal: 12,
+    },
+    bottomSection: {
+      alignItems: 'center',
+      minHeight: isTablet ? 64 : 56,
+      justifyContent: 'flex-end',
+    },
+    destinationButton: {
+      width: '100%',
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: colors.inputBox,
+      borderRadius: 16,
+      paddingVertical: isTablet ? 18 : 16,
+      paddingHorizontal: isTablet ? 20 : 16,
+      gap: isTablet ? 12 : 10,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    destinationText: {
+      color: colors.textEnabled,
+      fontSize: isTablet ? 17 : 15,
+      fontWeight: '700',
+    },
+  });
+};

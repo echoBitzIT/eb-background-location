@@ -1,0 +1,1310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Geo Employee Tracker — QA &amp; Bug Audit Report</title>
+<style>
+@page { size: A4; margin: 16mm 14mm 18mm 14mm; }
+html, body {
+  font-family: DejaVu Sans, Liberation Sans, Helvetica, Arial, sans-serif;
+  font-size: 10.5pt;
+  line-height: 1.45;
+  color: #1a1a1a;
+}
+h1 { font-size: 20pt; margin: 0 0 12pt; page-break-after: avoid; }
+h2 { font-size: 14pt; margin: 18pt 0 8pt; border-bottom: 1px solid #ccc; padding-bottom: 4pt; page-break-after: avoid; }
+h3 { font-size: 12pt; margin: 14pt 0 6pt; page-break-after: avoid; }
+h4 { font-size: 11pt; margin: 12pt 0 4pt; page-break-after: avoid; }
+p { margin: 0 0 8pt; }
+ul, ol { margin: 0 0 10pt 18pt; }
+li { margin-bottom: 3pt; }
+hr { border: none; border-top: 1px solid #bbb; margin: 14pt 0; }
+code {
+  font-family: DejaVu Sans Mono, Liberation Mono, Consolas, monospace;
+  font-size: 8.5pt;
+  background: #f3f3f3;
+  padding: 0 3px;
+}
+pre {
+  background: #f4f4f4;
+  border: 1px solid #ddd;
+  padding: 8pt;
+  font-size: 7.5pt;
+  line-height: 1.35;
+  white-space: pre-wrap;
+  word-break: break-word;
+  page-break-inside: auto;
+}
+pre code { background: none; padding: 0; font-size: inherit; }
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0 0 12pt;
+  font-size: 8pt;
+  page-break-inside: auto;
+}
+thead { display: table-header-group; }
+tr { page-break-inside: avoid; }
+th, td {
+  border: 1px solid #ccc;
+  padding: 4pt 5pt;
+  vertical-align: top;
+  text-align: left;
+  word-wrap: break-word;
+}
+th { background: #eef2f6; font-weight: 700; }
+a { color: #1a4a7a; }
+.cover-meta { color: #444; margin-bottom: 16pt; }
+</style>
+</head>
+<body>
+<h1>Geo Employee Tracker — Complete QA &amp; Bug Audit Report</h1>
+<p><strong>Application:</strong> <code>eb_geoemployee_tracker_mobile</code>   <strong>Date:</strong> 14 August 2026   <strong>Audit type:</strong> End-to-end static code review (architecture, APIs, navigation, security, Android/iOS). Not a device lab test.   <strong>Stack:</strong> React Native CLI <strong>0.86.0</strong>, React <strong>19.2.3</strong>, Redux Toolkit, Axios (default timeout 15s), Odoo REST. Not Expo.   <strong>Scope:</strong> Entire mobile app. No application code was modified during this audit.   <strong>Secrets:</strong> Firebase / Google Maps keys, tokens, and passwords are <strong>not</strong> reproduced in this report.</p>
+<hr/>
+<h2>1. Cover / architecture snapshot</h2>
+<p>Auth is Redux Toolkit plus Axios against a user-entered Odoo HTTPS base URL. Tokens live in AsyncStorage. There is no auth-gated navigator: every screen is on one native stack.</p>
+<p><strong>Main flow:</strong> Fetch URL → Login → Home tools (Geo / Attendance / Time Off) → field check-in, default-route GPS session, task routing + Google Maps WebView, geo history, HR leave.</p>
+<p>Session sync is TTL-deduped (15 seconds). Token refresh is single-flight on HTTP 401. Several screens cancel GETs with <code>AbortController</code>; several high-traffic screens do not.</p>
+<hr/>
+<h2>2. Executive summary</h2>
+<table><thead><tr>
+<th>Area</th>
+<th>Count (approx.)</th>
+</tr></thead><tbody>
+<tr>
+<td><strong>Total issues</strong></td>
+<td><strong>62</strong></td>
+</tr>
+<tr>
+<td>Critical</td>
+<td>6</td>
+</tr>
+<tr>
+<td>High</td>
+<td>18</td>
+</tr>
+<tr>
+<td>Medium</td>
+<td>24</td>
+</tr>
+<tr>
+<td>Low</td>
+<td>14</td>
+</tr>
+<tr>
+<td>API</td>
+<td>22</td>
+</tr>
+<tr>
+<td>UI/UX</td>
+<td>12</td>
+</tr>
+<tr>
+<td>Performance</td>
+<td>8</td>
+</tr>
+<tr>
+<td>Security</td>
+<td>8</td>
+</tr>
+<tr>
+<td>Navigation</td>
+<td>5</td>
+</tr>
+<tr>
+<td>Android</td>
+<td>7</td>
+</tr>
+<tr>
+<td>iOS</td>
+<td>5</td>
+</tr>
+</tbody></table>
+<p><strong>How to read findings</strong></p>
+<ul>
+<li><strong>Confirmed</strong> = the code path exists today.</li>
+<li><strong>Potential</strong> = it can happen under timing, bad API data, or device conditions.</li>
+</ul>
+<hr/>
+<h2>3. Issue table</h2>
+<h3>3.1 Critical</h3>
+<table><thead><tr>
+<th>ID</th>
+<th>Category</th>
+<th>File</th>
+<th>Issue</th>
+<th>Why it happens</th>
+<th>User impact</th>
+<th>Recommended fix</th>
+</tr></thead><tbody>
+<tr>
+<td>C1</td>
+<td>Auth / Nav</td>
+<td><code>App.tsx</code>, <code>AppNavigator.tsx</code></td>
+<td>401 refresh failure logs the user out in Redux/storage but does <strong>not</strong> reset navigation.</td>
+<td><code>onAuthFailure</code> calls <code>logout()</code> / <code>clearSession()</code>; the stack is not auth-aware. Settings logout *does* <code>reset</code>.</td>
+<td>User stays on Home/tasks with a dead session.</td>
+<td><code>navigationRef.reset</code> to Fetch URL/Login. Gate stack on <code>accessToken</code>.</td>
+</tr>
+<tr>
+<td>C2</td>
+<td>Location</td>
+<td><code>locationTrackingService.ts</code>, AndroidManifest, Info.plist</td>
+<td>Tracking is a JS <code>setInterval</code> with no Android foreground service, no <code>ACCESS_BACKGROUND_LOCATION</code>, iOS background mode is only <code>remote-notification</code>.</td>
+<td>Interval pauses when JS is suspended.</td>
+<td>Field path <strong>stops in background</strong>. Core product gap.</td>
+<td>Native background location + foreground service + Always permission; queue uploads.</td>
+</tr>
+<tr>
+<td>C3</td>
+<td>Security</td>
+<td><code>sessionStorage.ts</code>, AndroidManifest</td>
+<td>Access + refresh tokens in <strong>AsyncStorage</strong>; <code>android:allowBackup=&quot;true&quot;</code>.</td>
+<td>Backup/root can copy <code>@geo_employee_tracker/session</code>.</td>
+<td>Account takeover.</td>
+<td>Encrypted storage (Keychain/Keystore); <code>allowBackup=&quot;false&quot;</code>.</td>
+</tr>
+<tr>
+<td>C4</td>
+<td>Privacy</td>
+<td><code>locationTrackingService.ts</code></td>
+<td><strong>Production</strong> <code>console.log</code> of lat/lng and <code>point_uuid</code>.</td>
+<td>Logs not wrapped in <code>__DEV__</code>.</td>
+<td>PII in logcat / crash tools.</td>
+<td>Log only in <code>__DEV__</code>; never log coordinates.</td>
+</tr>
+<tr>
+<td>C5</td>
+<td>Android</td>
+<td><code>AndroidManifest.xml</code></td>
+<td><code>android:icon=&quot;@mipmap /ic_launcher&quot;</code> has a <strong>space</strong>.</td>
+<td>Invalid resource name.</td>
+<td>Icon/build failure or launcher crash.</td>
+<td>Use <code>@mipmap/ic_launcher</code>.</td>
+</tr>
+<tr>
+<td>C6</td>
+<td>Maps / Security</td>
+<td><code>TaskMapScreen.tsx</code>, <code>taskMapHtml.ts</code>, <code>GeoHistoryMapScreen.tsx</code></td>
+<td>Company <strong>Google Maps JS key</strong> injected into WebView HTML.</td>
+<td><code>fetchFieldMapConfig</code> returns the key; HTML loads Maps JS with it.</td>
+<td>Key extraction, billing abuse if unrestricted.</td>
+<td>Restrict key; prefer native map SDK; keep Directions on server.</td>
+</tr>
+</tbody></table>
+<h3>3.2 High</h3>
+<table><thead><tr>
+<th>ID</th>
+<th>Category</th>
+<th>File</th>
+<th>Issue</th>
+<th>Why it happens</th>
+<th>User impact</th>
+<th>Recommended fix</th>
+</tr></thead><tbody>
+<tr>
+<td>H1</td>
+<td>API / UX</td>
+<td><code>TimeOffCalendarScreen.tsx</code></td>
+<td>List uses default <strong><code>limit: 20</code></strong>, no pagination.</td>
+<td><code>fetchHrLeaves</code> defaults to 20; screen never loads more.</td>
+<td>Older requests missing.</td>
+<td>Paginate or load all pages.</td>
+</tr>
+<tr>
+<td>H2</td>
+<td>Race</td>
+<td><code>TimeOffRequestScreen.tsx</code></td>
+<td><code>setSubmitting(true)</code> runs <strong>after</strong> validation.</td>
+<td>Two fast taps both see <code>submitting === false</code>.</td>
+<td>Duplicate leave records.</td>
+<td>Lock with a ref immediately on first tap.</td>
+</tr>
+<tr>
+<td>H3</td>
+<td>API duplicate</td>
+<td><code>TaskMapScreen.tsx</code></td>
+<td>Every focus refetches task detail, map-config, and directions.</td>
+<td><code>useFocusEffect</code> → <code>bootstrap</code>; HTML cleared.</td>
+<td>Latency, quota, flicker.</td>
+<td>Bootstrap once per <code>taskId</code>; cache config.</td>
+</tr>
+<tr>
+<td>H4</td>
+<td>Performance</td>
+<td><code>TaskMapScreen.tsx</code></td>
+<td><code>watchPosition</code> with <code>distanceFilter: 0</code>, 1s / 500ms.</td>
+<td>Watch starts on every focus.</td>
+<td>Battery drain, heat.</td>
+<td>Filter 5–15m; interval 3–5s.</td>
+</tr>
+<tr>
+<td>H5</td>
+<td>API</td>
+<td><code>TaskRoutingScreen.tsx</code></td>
+<td><strong>No AbortSignal</strong>. Refresh uses <code>loadTasks(() =&gt; false)</code>.</td>
+<td>Chip/date/page/focus all call GET; old request continues.</td>
+<td>Duplicate GETs; setState after unmount.</td>
+<td>AbortController; cancel on unmount.</td>
+</tr>
+<tr>
+<td>H6</td>
+<td>API duplicate</td>
+<td>Time Off Calendar + Request</td>
+<td>Calendar loads leave + types on every focus; Request loads types again + up to <strong>200</strong> leaves.</td>
+<td>No shared cache.</td>
+<td>Slow Time Off flow.</td>
+<td>In-memory TTL cache.</td>
+</tr>
+<tr>
+<td>H7</td>
+<td>API duplicate</td>
+<td><code>HomeScreen.tsx</code> + <code>TaskMapScreen.tsx</code></td>
+<td>Home fetches task detail to navigate; Map fetches again.</td>
+<td>Two GET <code>/field/tasks/{id}</code> in one flow.</td>
+<td>Delay opening the map.</td>
+<td>Pass detail in params or short cache.</td>
+</tr>
+<tr>
+<td>H8</td>
+<td>Prod / Privacy</td>
+<td><code>apiClient.ts</code></td>
+<td><code>[TimeOff]</code> logs run in <strong>production</strong>.</td>
+<td>No <code>__DEV__</code> guard.</td>
+<td>PII in device logs.</td>
+<td>Guard or delete.</td>
+</tr>
+<tr>
+<td>H9</td>
+<td>Error UX</td>
+<td><code>apiClient.ts</code></td>
+<td>Unknown 500/403/422 fall through to Axios/<code>data.error</code>.</td>
+<td>Only some codes mapped.</td>
+<td>Users see <code>Request failed with status code 500</code>.</td>
+<td>Map all 4xx/5xx to safe copy.</td>
+</tr>
+<tr>
+<td>H10</td>
+<td>Tracking</td>
+<td><code>locationTrackingService.ts</code></td>
+<td>Failed uploads dropped; <code>is_offline_sync</code> unused.</td>
+<td>Catch logs and returns; no queue.</td>
+<td>Gaps in the trail offline.</td>
+<td>Persist a point queue.</td>
+</tr>
+<tr>
+<td>H11</td>
+<td>Auth UX</td>
+<td>Screens generally</td>
+<td>After C1, screens show “Session expired” <strong>in place</strong>.</td>
+<td>No global redirect.</td>
+<td>Stuck authenticated UI.</td>
+<td>Same as C1.</td>
+</tr>
+<tr>
+<td>H12</td>
+<td>Time</td>
+<td><code>CheckInScreen.tsx</code></td>
+<td>Naive datetimes get a <strong><code>Z</code> suffix</strong>.</td>
+<td>Treated as UTC.</td>
+<td>Wrong worked hours vs local TZ.</td>
+<td>Parse as API actually sends time.</td>
+</tr>
+<tr>
+<td>H13</td>
+<td>Data</td>
+<td>auth employee</td>
+<td>Time Off fails if <code>employee.id</code> missing.</td>
+<td><code>MobileEmployee.id?: number</code>.</td>
+<td>Cannot load/submit leave.</td>
+<td>Require <code>id</code> at login.</td>
+</tr>
+<tr>
+<td>H14</td>
+<td>Security</td>
+<td><code>android/app/google-services.json</code></td>
+<td>Firebase client key is <strong>committed</strong>.</td>
+<td>Standard RN Firebase file in git.</td>
+<td>Abuse if API restrictions are loose.</td>
+<td>Restrict by app id/SHA-1; rotate if leaked.</td>
+</tr>
+<tr>
+<td>H15</td>
+<td>Timeout</td>
+<td><code>apiClient.ts</code></td>
+<td>Default <strong>15s</strong>; uploads 60s; stop images <strong>120s</strong>; no retry except 401.</td>
+<td>Axios default.</td>
+<td>Slow Odoo hits timeout.</td>
+<td>15s GET, 30s mutations, 60s media; one network retry.</td>
+</tr>
+<tr>
+<td>H16</td>
+<td>Leak</td>
+<td><code>TaskMapScreen.tsx</code></td>
+<td>Detail/config/directions <strong>omit <code>signal</code></strong>.</td>
+<td>Cancel flag ignores in-flight HTTP.</td>
+<td>Calls continue after leaving the map.</td>
+<td>Pass AbortSignal; abort on blur.</td>
+</tr>
+<tr>
+<td>H17</td>
+<td>Interval</td>
+<td><code>locationTrackingService.ts</code></td>
+<td>Backend can set <strong>1s</strong> GPS upload.</td>
+<td><code>uploadInFlight</code> skips overlaps.</td>
+<td>Battery + missed points.</td>
+<td>Client floor 10–15s.</td>
+</tr>
+<tr>
+<td>H18</td>
+<td>UX dead</td>
+<td><code>HomeScreen.tsx</code></td>
+<td>Get Help <code>onPress={() =&gt; {}}</code>.</td>
+<td>Stub.</td>
+<td>Looks broken.</td>
+<td>Wire help URL or hide.</td>
+</tr>
+</tbody></table>
+<h3>3.3 Medium</h3>
+<table><thead><tr>
+<th>ID</th>
+<th>Issue</th>
+<th>Plain explanation</th>
+</tr></thead><tbody>
+<tr>
+<td>M1</td>
+<td>Home focus session sync</td>
+<td>After 15s TTL, every Home focus attempts <code>GET /field/session</code>.</td>
+</tr>
+<tr>
+<td>M2</td>
+<td>Resume prompt once</td>
+<td>Tapping <strong>Later</strong> never asks again until Home remounts.</td>
+</tr>
+<tr>
+<td>M3</td>
+<td>Check-in double session GET</td>
+<td>Focus + submit both call sync; TTL usually collapses them.</td>
+</tr>
+<tr>
+<td>M4</td>
+<td>Task Routing GPS 4s race</td>
+<td>Losing <code>Promise.race</code> does not cancel <code>getCurrentCoordinates</code>; dialog can pop late.</td>
+</tr>
+<tr>
+<td>M5</td>
+<td>History day max 50 sessions</td>
+<td><code>limit: 50</code>, <code>offset: 0</code> only. Extra sessions that day hidden.</td>
+</tr>
+<tr>
+<td>M6</td>
+<td>Occupied dates from first 200 leaves</td>
+<td>User might book a day that already has leave.</td>
+</tr>
+<tr>
+<td>M7</td>
+<td>Login email</td>
+<td>Only checks empty, not format; rare double-tap before <code>loginLoading</code>.</td>
+</tr>
+<tr>
+<td>M8</td>
+<td>Fetch URL search</td>
+<td>Same one-frame double search.</td>
+</tr>
+<tr>
+<td>M9</td>
+<td>Profile photo as huge base64</td>
+<td>Memory + large PATCH.</td>
+</tr>
+<tr>
+<td>M10</td>
+<td>Check-in clock every 1s</td>
+<td>Whole screen re-renders.</td>
+</tr>
+<tr>
+<td>M11</td>
+<td>Notification channel deleted then recreated</td>
+<td>User mute/importance reset.</td>
+</tr>
+<tr>
+<td>M12</td>
+<td>Foreground push only for no-movement</td>
+<td>Other FCM types silent in foreground.</td>
+</tr>
+<tr>
+<td>M13</td>
+<td>iOS When In Use only</td>
+<td>Same background gap as C2 on iOS.</td>
+</tr>
+<tr>
+<td>M14</td>
+<td>No Android foreground location service</td>
+<td>Background tracking cannot ship without this.</td>
+</tr>
+<tr>
+<td>M15</td>
+<td>Invalid Maps key still loads HTML</td>
+<td>Blank map possible.</td>
+</tr>
+<tr>
+<td>M16</td>
+<td>Task Map lat/lng not validated</td>
+<td>NaN map / HTML crash if params bad.</td>
+</tr>
+<tr>
+<td>M17</td>
+<td>Logout revoke 15s × 2</td>
+<td>Best-effort revoke can hang logout.</td>
+</tr>
+<tr>
+<td>M18</td>
+<td>Splash blocks forever</td>
+<td>GPS/camera/network alerts are non-cancelable.</td>
+</tr>
+<tr>
+<td>M19</td>
+<td>Access gate on all post-splash screens</td>
+<td>Cannot view Time Off without camera.</td>
+</tr>
+<tr>
+<td>M20</td>
+<td>View Details note effect</td>
+<td>Params + local note can fight / extra renders.</td>
+</tr>
+<tr>
+<td>M21</td>
+<td>Task Capture refetch on every focus</td>
+<td>Extra GET after camera.</td>
+</tr>
+<tr>
+<td>M22</td>
+<td>Checklist refetch on every focus</td>
+<td>Extra GET after map.</td>
+</tr>
+<tr>
+<td>M23</td>
+<td>Silent session GET failure</td>
+<td>Stale checked-in if server down; no toast.</td>
+</tr>
+<tr>
+<td>M24</td>
+<td>Time Off kebab stub</td>
+<td>More-options does nothing.</td>
+</tr>
+</tbody></table>
+<h3>3.4 Low</h3>
+<table><thead><tr>
+<th>ID</th>
+<th>Issue</th>
+<th>Recommended fix</th>
+</tr></thead><tbody>
+<tr>
+<td>L1</td>
+<td>Unused packages: MapLibre, <code>react-native-maps</code>, Nitro Image, <code>@react-native/new-app-screen</code></td>
+<td>Remove unused packages.</td>
+</tr>
+<tr>
+<td>L2</td>
+<td>Two vector-icon libraries</td>
+<td>Keep one.</td>
+</tr>
+<tr>
+<td>L3</td>
+<td>ProGuard/R8 off in release</td>
+<td>Enable with keep rules.</td>
+</tr>
+<tr>
+<td>L4</td>
+<td>Theme follows OS only</td>
+<td>Optional in-app setting.</td>
+</tr>
+<tr>
+<td>L5</td>
+<td>Terms URL <code>Linking.openURL</code> without try/catch</td>
+<td>Catch + toast.</td>
+</tr>
+<tr>
+<td>L6</td>
+<td>Tablet <code>contentMaxWidth: 480</code></td>
+<td>Widen if tablets supported.</td>
+</tr>
+<tr>
+<td>L7</td>
+<td>Portrait lock both platforms</td>
+<td>Intentional; none.</td>
+</tr>
+<tr>
+<td>L8</td>
+<td>Unguarded TaskMap/TaskRouting logs</td>
+<td>Guard with <code>__DEV__</code>.</td>
+</tr>
+<tr>
+<td>L9</td>
+<td><code>apiClient.ts</code> ~2400 lines</td>
+<td>Split by domain (optional).</td>
+</tr>
+<tr>
+<td>L10</td>
+<td>Fetch URL rejects ports / localhost</td>
+<td>Allow port in debug builds.</td>
+</tr>
+<tr>
+<td>L11</td>
+<td>No app deep-link intent filters</td>
+<td>Add if notifications should open a task.</td>
+</tr>
+<tr>
+<td>L12</td>
+<td>iOS ATS <code>NSAllowsArbitraryLoads</code> false</td>
+<td>Keep HTTPS-only (good).</td>
+</tr>
+<tr>
+<td>L13</td>
+<td><code>usesCleartextTraffic</code> placeholder</td>
+<td>False in release.</td>
+</tr>
+<tr>
+<td>L14</td>
+<td>Almost no tests</td>
+<td>Add API/auth tests.</td>
+</tr>
+</tbody></table>
+<hr/>
+<h2>4. API call summary</h2>
+<p><strong>Timeouts:</strong> Axios <strong>15s</strong> default. Longer: check-in/out, start/end session, add-stop, location upload, leave attach, selfie (<strong>60s</strong>); stop images (<strong>120s</strong>).   <strong>Retry:</strong> HTTP <strong>401 refresh only</strong> (single-flight).   <strong>Cancellation:</strong> mixed.</p>
+<table><thead><tr>
+<th>API</th>
+<th>Method</th>
+<th>Called from</th>
+<th>Timeout</th>
+<th>Retry</th>
+<th>Duplicate risk</th>
+<th>Recommendation</th>
+</tr></thead><tbody>
+<tr>
+<td><code>/api/v1/company/search</code></td>
+<td>GET</td>
+<td>Fetch URL</td>
+<td>15s</td>
+<td>No</td>
+<td>Low (double-tap 1 frame)</td>
+<td>Submitting ref</td>
+</tr>
+<tr>
+<td><code>/api/v1/auth/login</code></td>
+<td>POST</td>
+<td>Login</td>
+<td>15s</td>
+<td>No</td>
+<td>Low</td>
+<td>Disable immediately</td>
+</tr>
+<tr>
+<td><code>/api/v1/authentication/token</code></td>
+<td>POST</td>
+<td>Splash + Axios 401 interceptor</td>
+<td>15s</td>
+<td>No</td>
+<td>Low if splash+API overlap</td>
+<td>Share single-flight with splash</td>
+</tr>
+<tr>
+<td><code>/api/v1/authentication/revoke</code></td>
+<td>POST</td>
+<td>Logout (access + refresh)</td>
+<td>15s</td>
+<td>No</td>
+<td>None</td>
+<td>Short timeout (3–5s)</td>
+</tr>
+<tr>
+<td><code>/api/v1/me</code></td>
+<td>GET</td>
+<td>Home/Profile if no employee</td>
+<td>15s</td>
+<td>401</td>
+<td>Low</td>
+<td>OK</td>
+</tr>
+<tr>
+<td><code>/api/v1/me</code></td>
+<td>PATCH</td>
+<td>Profile save</td>
+<td>15s</td>
+<td>401</td>
+<td>Low</td>
+<td>Already <code>busy</code></td>
+</tr>
+<tr>
+<td><code>/api/v1/field/session</code></td>
+<td>GET</td>
+<td>Splash, Home focus, CheckIn, DefaultRoute, login sync</td>
+<td>15s</td>
+<td>401</td>
+<td>Medium after TTL</td>
+<td>Keep TTL; toast on failure</td>
+</tr>
+<tr>
+<td><code>/api/v1/field/check-in</code> <code>/check-out</code></td>
+<td>POST</td>
+<td>CheckIn</td>
+<td>60s</td>
+<td>401</td>
+<td>Low</td>
+<td>OK (<code>submittingRef</code>)</td>
+</tr>
+<tr>
+<td><code>/api/v1/field/start-session</code> <code>/end-session</code></td>
+<td>POST</td>
+<td>Default Route</td>
+<td>60s</td>
+<td>401</td>
+<td>Low</td>
+<td>OK</td>
+</tr>
+<tr>
+<td><code>/api/v1/field/location</code></td>
+<td>POST</td>
+<td>Interval tracker</td>
+<td>60s</td>
+<td>401</td>
+<td>High frequency</td>
+<td>Min 10–15s; queue</td>
+</tr>
+<tr>
+<td><code>/api/v1/field/device-token</code></td>
+<td>POST/DELETE</td>
+<td>Login/splash/logout</td>
+<td>15s</td>
+<td>No</td>
+<td>Low</td>
+<td>OK additive</td>
+</tr>
+<tr>
+<td><code>/api/v1/field/tasks</code></td>
+<td>GET</td>
+<td>Task Routing focus/chip/date/page/refresh</td>
+<td>15s</td>
+<td>401</td>
+<td><strong>High</strong> (no abort)</td>
+<td>Abort + debounce chip</td>
+</tr>
+<tr>
+<td><code>/api/v1/field/tasks/{id}</code></td>
+<td>GET</td>
+<td>Home resume, TaskMap, Capture, Checklist, History</td>
+<td>15s</td>
+<td>401</td>
+<td><strong>High</strong></td>
+<td>Cache; don’t refetch every focus</td>
+</tr>
+<tr>
+<td><code>/api/v1/field/map-config</code></td>
+<td>GET</td>
+<td>TaskMap + GeoHistoryMap</td>
+<td>15s</td>
+<td>401</td>
+<td><strong>High</strong> on TaskMap focus</td>
+<td>Cache for session</td>
+</tr>
+<tr>
+<td><code>/api/v1/field/directions</code></td>
+<td>POST</td>
+<td>TaskMap route + watch reroute</td>
+<td>15s</td>
+<td>401</td>
+<td><strong>High</strong></td>
+<td>Abort; keep throttle</td>
+</tr>
+<tr>
+<td><code>/api/v1/field/attendance/calendar</code></td>
+<td>GET</td>
+<td>Attendance month; TimeOff date modal</td>
+<td>15s</td>
+<td>401</td>
+<td>Low</td>
+<td>OK</td>
+</tr>
+<tr>
+<td><code>/api/v1/field/history</code></td>
+<td>GET</td>
+<td>Geo History month</td>
+<td>15s</td>
+<td>401</td>
+<td>Low</td>
+<td>OK</td>
+</tr>
+<tr>
+<td><code>/api/v1/field/history/years</code></td>
+<td>GET</td>
+<td>Geo History mount</td>
+<td>15s</td>
+<td>401</td>
+<td>Low</td>
+<td>OK</td>
+</tr>
+<tr>
+<td><code>/api/v1/field/history/sessions</code></td>
+<td>GET</td>
+<td>Day screen</td>
+<td>15s</td>
+<td>401</td>
+<td>Low</td>
+<td>Paginate if total &gt; 50</td>
+</tr>
+<tr>
+<td><code>/api/v1/field/sessions/{id}</code></td>
+<td>GET</td>
+<td>Session screen</td>
+<td>15s</td>
+<td>401</td>
+<td>Low</td>
+<td>OK</td>
+</tr>
+<tr>
+<td><code>/api/v1/field/sessions/{id}/route</code></td>
+<td>GET</td>
+<td>History map</td>
+<td>15s</td>
+<td>401</td>
+<td>Low</td>
+<td>Parallel OK</td>
+</tr>
+<tr>
+<td><code>/api/v1/records/hr.leave</code></td>
+<td>GET</td>
+<td>Calendar focus; Request occupancy</td>
+<td>30s</td>
+<td>401</td>
+<td><strong>High</strong></td>
+<td>Cache; paginate</td>
+</tr>
+<tr>
+<td><code>/api/v1/records/hr.leave.type</code></td>
+<td>GET</td>
+<td>Calendar + Request</td>
+<td>30s</td>
+<td>401</td>
+<td><strong>High</strong></td>
+<td>Cache</td>
+</tr>
+<tr>
+<td><code>/api/v1/records/hr.leave</code></td>
+<td>POST</td>
+<td>Request submit</td>
+<td>15s</td>
+<td>401</td>
+<td><strong>High</strong></td>
+<td>Immediate lock</td>
+</tr>
+<tr>
+<td><code>hr.leave/{id}/attachments</code></td>
+<td>POST</td>
+<td>After create</td>
+<td>60s</td>
+<td>401</td>
+<td>Low</td>
+<td>Retry attach without second leave</td>
+</tr>
+<tr>
+<td>Task start/arrive/complete/cancel/pause</td>
+<td>POST</td>
+<td>Map/Capture</td>
+<td>15s</td>
+<td>401</td>
+<td>Medium</td>
+<td>Keep refs</td>
+</tr>
+<tr>
+<td>Stop note/selfie/images</td>
+<td>PATCH/POST</td>
+<td>Capture</td>
+<td>60–120s</td>
+<td>401</td>
+<td>Medium</td>
+<td>Cancel on leave</td>
+</tr>
+</tbody></table>
+<p><strong>Over-called (do not remove the API; reduce frequency):</strong> <code>GET /field/session</code> on every Home focus after TTL; <code>GET /field/tasks/{id}</code> + map-config + directions on every TaskMap focus; <code>hr.leave</code> + <code>hr.leave.type</code> on every Time Off Calendar focus and again on Request; Task Routing GET on every focus when returning from a task.</p>
+<p><strong>Required:</strong> login, session sync after check-in, location upload while tracking, task mutations, leave create.</p>
+<hr/>
+<h2>5. Screen-by-screen summary</h2>
+<table><thead><tr>
+<th>Screen</th>
+<th>API issues</th>
+<th>UI issues</th>
+<th>Navigation</th>
+<th>Performance</th>
+<th>State</th>
+<th>Severity</th>
+</tr></thead><tbody>
+<tr>
+<td>Splash</td>
+<td>Session refresh + <code>field/session</code> + push</td>
+<td>Blocks on GPS/camera/network</td>
+<td><code>replace</code> Home/Fetch URL</td>
+<td>Sequential waits</td>
+<td>Cancel on unmount OK</td>
+<td>Medium</td>
+</tr>
+<tr>
+<td>Fetch URL</td>
+<td>Search double-tap potential</td>
+<td>KeyboardAvoiding OK</td>
+<td>From splash via replace</td>
+<td>—</td>
+<td>URL persisted</td>
+<td>Low</td>
+</tr>
+<tr>
+<td>Login</td>
+<td>Weak email validation</td>
+<td>Terms + password toggle OK</td>
+<td><code>reset</code> Home</td>
+<td>—</td>
+<td>Redux loading</td>
+<td>Medium</td>
+</tr>
+<tr>
+<td>Home</td>
+<td>Session sync on focus; resume task-detail; Get Help stub</td>
+<td>Check In/Out label OK</td>
+<td>Resume → Map/Capture</td>
+<td>—</td>
+<td><code>resumePromptedRef</code></td>
+<td>High</td>
+</tr>
+<tr>
+<td>Settings</td>
+<td>Logout revoke</td>
+<td>Logout color hardcoded</td>
+<td><code>reset</code> Fetch URL (good)</td>
+<td>Revoke wait</td>
+<td>—</td>
+<td>Low</td>
+</tr>
+<tr>
+<td>Profile</td>
+<td>Conditional GET me; large avatar PATCH</td>
+<td>Edit/read modes</td>
+<td>Back OK</td>
+<td>Base64 memory</td>
+<td>Form vs employee</td>
+<td>Medium</td>
+</tr>
+<tr>
+<td>Check-In</td>
+<td>Session GET + check-in/out</td>
+<td>1s clock rerender</td>
+<td>Selfie round-trip</td>
+<td>Timer</td>
+<td>TZ <code>Z</code> bug</td>
+<td>High</td>
+</tr>
+<tr>
+<td>Selfie camera</td>
+<td>None</td>
+<td>VisionCamera focus</td>
+<td><code>returnTo</code> checkIn/visitStop</td>
+<td>Camera lifecycle</td>
+<td><code>beforeRemove</code> while capturing</td>
+<td>Low</td>
+</tr>
+<tr>
+<td>Geo Management</td>
+<td>None</td>
+<td>Rows OK</td>
+<td>To Default/Task Routing</td>
+<td>—</td>
+<td>—</td>
+<td>Low</td>
+</tr>
+<tr>
+<td>Default Route</td>
+<td>Session GET; start/end</td>
+<td>Hydrate spinner</td>
+<td>Check-in CTA</td>
+<td>—</td>
+<td>submittingRef OK</td>
+<td>Medium</td>
+</tr>
+<tr>
+<td>Task Routing</td>
+<td>Tasks GET no abort; GPS race</td>
+<td>Pagination UI</td>
+<td>To map/checklist</td>
+<td>GPS 4s</td>
+<td>Chip/page refetch</td>
+<td>High</td>
+</tr>
+<tr>
+<td>What Needs To Be Done</td>
+<td>Detail every focus</td>
+<td>Checklist</td>
+<td>Back</td>
+<td>—</td>
+<td>Local progress merge</td>
+<td>Medium</td>
+</tr>
+<tr>
+<td>Task Map</td>
+<td>Detail+config+directions every focus; 1Hz GPS</td>
+<td>WebView map; banners</td>
+<td>Back; start/arrive</td>
+<td><strong>Battery</strong></td>
+<td>Many refs</td>
+<td>Critical/High</td>
+</tr>
+<tr>
+<td>Task Capture</td>
+<td>Detail every focus; selfie/complete</td>
+<td>Requirements gating</td>
+<td>Pop to routing</td>
+<td>Image upload</td>
+<td>Dual focus work</td>
+<td>Medium</td>
+</tr>
+<tr>
+<td>View Details</td>
+<td>add-stop</td>
+<td>Notes/photo</td>
+<td>Default-route stop</td>
+<td>—</td>
+<td>Param sync</td>
+<td>Medium</td>
+</tr>
+<tr>
+<td>Geo History</td>
+<td>years + month history</td>
+<td>Month pills</td>
+<td>To day</td>
+<td>—</td>
+<td>Abort OK</td>
+<td>Low</td>
+</tr>
+<tr>
+<td>Geo History Day</td>
+<td>Sessions cap 50</td>
+<td>Cards</td>
+<td>To session</td>
+<td>—</td>
+<td>—</td>
+<td>Medium</td>
+</tr>
+<tr>
+<td>Geo History Session</td>
+<td>Session GET</td>
+<td>—</td>
+<td>To map/task</td>
+<td>—</td>
+<td>Abort OK</td>
+<td>Low</td>
+</tr>
+<tr>
+<td>Geo History Map</td>
+<td>map-config + route</td>
+<td>WebView</td>
+<td>Back</td>
+<td>HTML map</td>
+<td>Abort OK</td>
+<td>Medium</td>
+</tr>
+<tr>
+<td>Geo History Task Detail</td>
+<td>Task + stop images</td>
+<td>Image viewer</td>
+<td>Back</td>
+<td>Base64 images</td>
+<td>Abort OK</td>
+<td>Medium</td>
+</tr>
+<tr>
+<td>Attendance Calendar</td>
+<td>Month GET</td>
+<td>Calendar/list</td>
+<td>—</td>
+<td>Abort OK</td>
+<td>Month reload</td>
+<td>Low</td>
+</tr>
+<tr>
+<td>Time Off Calendar</td>
+<td>Leaves 20 + types every focus; kebab stub</td>
+<td>FAB; chips</td>
+<td>To Request</td>
+<td>—</td>
+<td>Abort OK</td>
+<td>High</td>
+</tr>
+<tr>
+<td>Time Off Request</td>
+<td>Types + 200 leaves + holiday calendar; double submit</td>
+<td>Date modal; attachments</td>
+<td>goBack</td>
+<td>Logs PII</td>
+<td>Occupancy incomplete</td>
+<td>High</td>
+</tr>
+</tbody></table>
+<hr/>
+<h2>6. Bug explanations (plain language)</h2>
+<h3>6.1 Critical (fix first)</h3>
+<h4>C1 — Session dies, but the app still looks logged in</h4>
+<p><strong>Where:</strong> <code>App.tsx</code> (<code>onAuthFailure</code>) + <code>AppNavigator.tsx</code></p>
+<p>If the access token expires and refresh fails, Redux and storage are cleared, but the stack is <strong>not</strong> sent back to Fetch URL / Login. Settings logout *does* reset navigation. Silent 401 logout does not.</p>
+<p><strong>User sees:</strong> Home, maps, time off still on screen. Buttons fail or show “session expired” with no way out except force-close.</p>
+<p><strong>Fix:</strong> On auth failure, <code>navigationRef.reset</code> to Fetch URL (or Login). Optionally hide the logged-in stack when <code>accessToken</code> is null.</p>
+<h4>C2 — GPS tracking stops when the app is in the background</h4>
+<p><strong>Where:</strong> <code>locationTrackingService.ts</code> (<code>setInterval</code>), AndroidManifest, iOS <code>Info.plist</code></p>
+<p>Uploads run on a JS timer. There is no Android foreground service, no <code>ACCESS_BACKGROUND_LOCATION</code>, and iOS only has <code>remote-notification</code> (not location) background mode.</p>
+<p><strong>User sees:</strong> Trail gaps when they lock the phone or switch apps. No-movement alerts and history become wrong. This is the core of a field tracker.</p>
+<p><strong>Fix:</strong> Native background location + notification; queue points when offline; do not rely on JS <code>setInterval</code> alone. This is a <strong>large</strong> native change (later epic).</p>
+<h4>C3 — Tokens stored insecurely + Android backup</h4>
+<p><strong>Where:</strong> <code>sessionStorage.ts</code> (AsyncStorage), <code>AndroidManifest.xml</code> <code>allowBackup=&quot;true&quot;</code></p>
+<p>Access + refresh tokens sit in plaintext AsyncStorage and can be included in device backup.</p>
+<p><strong>Impact:</strong> Stolen session / account takeover on a lost or backed-up phone.</p>
+<p><strong>Fix:</strong> Keychain (iOS) / Keystore (Android). Set <code>allowBackup=&quot;false&quot;</code>.</p>
+<h4>C4 — Live GPS logged in production</h4>
+<p><strong>Where:</strong> <code>locationTrackingService.ts</code> → <code>uploadCurrentPoint</code></p>
+<p><code>console.log</code> prints latitude, longitude, <code>point_uuid</code> <strong>without</strong> <code>__DEV__</code>.</p>
+<p><strong>Impact:</strong> Coordinates in Logcat / crash tools (privacy).</p>
+<p><strong>Fix:</strong> Remove or wrap in <code>__DEV__</code>. Never log coordinates.</p>
+<h4>C5 — Android launcher icon path is broken</h4>
+<p><strong>Where:</strong> <code>android/app/src/main/AndroidManifest.xml</code></p>
+<p><code>android:icon=&quot;@mipmap /ic_launcher&quot;</code> has a <strong>space</strong> after <code>mipmap</code>.</p>
+<p><strong>Impact:</strong> Bad icon, failed resource compile, or launcher crash.</p>
+<p><strong>Fix:</strong> <code>@mipmap/ic_launcher</code> (no space).</p>
+<h4>C6 — Google Maps JS API key inside the WebView</h4>
+<p><strong>Where:</strong> <code>TaskMapScreen.tsx</code>, <code>taskMapHtml.ts</code>, <code>GeoHistoryMapScreen.tsx</code></p>
+<p>Backend <code>map-config</code> returns the company Google key; the app injects it into HTML. Anyone can extract it from the WebView.</p>
+<p><strong>Impact:</strong> Billing abuse if the key is not tightly restricted.</p>
+<p><strong>Fix:</strong> Restrict the key (package name / SHA-1 / HTTP referrer). Prefer a native map SDK. Keep Directions on the server (already proxied). Do not paste the key into chats or this report.</p>
+<h3>6.2 High</h3>
+<h4>H1 — Time Off list only loads 20 requests</h4>
+<p><code>TimeOffCalendarScreen</code> → <code>fetchHrLeaves</code> default <code>limit: 20</code>. No pagination. Older leaves missing; filters look empty.</p>
+<h4>H2 — Double-tap can create two time-off requests</h4>
+<p><code>handleSubmit</code> checks <code>if (submitting) return</code> first, but <code>setSubmitting(true)</code> is <strong>after</strong> validation. Two fast taps both pass. Duplicate leave records.</p>
+<h4>H3 — Task Map reloads APIs every time you come back</h4>
+<p>Every focus: task detail + map-config + directions; WebView HTML is cleared. Flicker, delay, extra Google/Odoo quota.</p>
+<h4>H4 — Task Map GPS watch is too aggressive</h4>
+<p><code>distanceFilter: 0</code>, interval 1000ms, fastestInterval 500ms. Battery drain and extra reroute calls.</p>
+<h4>H5 — Task list requests are not cancelled</h4>
+<p>Chip/date/page/focus fire <code>GET /field/tasks</code> with <strong>no AbortSignal</strong>. Pull-to-refresh uses <code>loadTasks(() =&gt; false)</code>, so leaving the screen does not cancel. Duplicate GETs; possible state update after unmount.</p>
+<h4>H6 — Time Off Calendar and Request hit the same APIs twice</h4>
+<p>Calendar: <code>hr.leave</code> + <code>hr.leave.type</code> on <strong>every focus</strong>. Request: types again + up to 200 leaves. Slow Time Off flow.</p>
+<h4>H7 — Opening a task from Home hits task-detail twice</h4>
+<p>Home already <code>GET /field/tasks/{id}</code> to navigate; Map fetches it again.</p>
+<h4>H8 — Time Off debug logs run in production</h4>
+<p><code>apiClient.ts</code> logs employeeId, dates, names with no <code>__DEV__</code>.</p>
+<h4>H9 — Ugly / raw API errors shown to users</h4>
+<p>Unmapped 500/403/422 become Axios text or raw Odoo <code>error</code>. Users see <code>Request failed with status code 500</code>.</p>
+<h4>H10 — Offline GPS points are thrown away</h4>
+<p>Upload failure is logged and dropped. Types have <code>is_offline_sync</code> but it is unused. Holes in the trail with no internet.</p>
+<h4>H11 — No redirect after interceptor logout</h4>
+<p>Same as C1 from the user’s point of view.</p>
+<h4>H12 — Check-in times can be wrong (timezone)</h4>
+<p>Datetimes without <code>Z</code> get <code>Z</code> appended, treated as UTC. Wrong clock / worked hours.</p>
+<h4>H13 — Time Off breaks if <code>employee.id</code> is missing</h4>
+<p>Login employee type has optional <code>id</code>. List/submit skip or toast “profile missing”.</p>
+<h4>H14 — Firebase client key is in git</h4>
+<p>Normal for Firebase, but dangerous if the key has no app/SHA restrictions. Restrict in Google Cloud; rotate if it was shared widely.</p>
+<h4>H15 — Timeout strategy is uneven</h4>
+<p>15s default prevents infinite hang; some GETs have no extra timeout; device-token register has no extra timeout; no retry except 401.</p>
+<h4>H16 — Task Map HTTP continues after you leave</h4>
+<p><code>cancelled</code> flag ignores in-flight HTTP. AbortController on blur needed.</p>
+<h4>H17 — Server can set GPS upload every 1 second</h4>
+<p>Client allows 1s; uploads take up to 60s; <code>uploadInFlight</code> skips, so points are lost and battery dies. Floor at 10–15 seconds.</p>
+<h4>H18 — “Get Help” does nothing</h4>
+<p><code>HomeScreen</code> <code>onPress={() =&gt; {}}</code>. Open a URL or hide the button.</p>
+<h3>6.3 Medium</h3>
+<p>See issue table M1–M24. Highlights:</p>
+<ul>
+<li><strong>M2:</strong> Resume task “Later” never re-prompts until Home remounts.</li>
+<li><strong>M4:</strong> Location dialog can appear after the task list already loaded.</li>
+<li><strong>M5/M6:</strong> Pagination caps hide data (50 sessions / 200 leaves).</li>
+<li><strong>M19:</strong> GPS + camera required on <strong>all</strong> post-splash screens including Time Off.</li>
+<li><strong>M23:</strong> Session GET failure silently uses local attendance (stale check-in).</li>
+<li><strong>M24:</strong> Time Off kebab is a stub.</li>
+</ul>
+<h3>6.4 Low</h3>
+<p>Unused map libraries, two icon packages, ProGuard off, almost no tests, huge <code>apiClient.ts</code>, Fetch URL rejects staging URLs with ports, no deep links.</p>
+<h3>6.5 Auth, timeout, offline, crash (short)</h3>
+<p><strong>Auth:</strong> Tokens in AsyncStorage; Bearer per call (not Axios default header). Refresh is single-flight on 401. Splash refresh is a <strong>second path</strong>. No proactive refresh before expiry (30s skew only at splash). Logout from Settings is complete; interceptor logout is <strong>not</strong>. Push unregister on logout/auth failure.</p>
+<p><strong>Timeout / hang:</strong> 15s default prevents infinite Axios hang. Splash/GPS waits <strong>can</strong> feel infinite. <code>slowWaitToast</code> only tracks <strong>non-GET</strong> after 3.5s. GET screens can spin until 15s then error (good) or until abort.</p>
+<p><strong>Offline:</strong> NetInfo on splash only. Later screens map Axios no-response to <code>network_error</code>. Location points are <strong>not</strong> queued. Attendance sync <strong>silently</strong> uses cache.</p>
+<p><strong>Crashes (realistic):</strong> invalid map coords; WebView/Maps JS; missing <code>employee.id</code>; unhandled <code>setState</code> on TaskRouting refresh; VisionCamera if no device; assuming <code>checklist.todo</code> arrays (parser throws → error UI, not crash).</p>
+<hr/>
+<h2>7. Fix priority</h2>
+<h3>7.1 Fix immediately (Critical + High)</h3>
+<ol>
+<li><strong>C1</strong> — Redirect to login when refresh fails (auth-aware navigation).</li>
+<li><strong>C2 / H10 / H17 / M13 / M14</strong> — Real background tracking + upload queue + sane min interval (C2 is a large follow-up).</li>
+<li><strong>C3</strong> — Secure token storage; disable backup.</li>
+<li><strong>C4 / H8 / L8</strong> — Strip production logs (especially GPS and Time Off).</li>
+<li><strong>C5</strong> — Fix launcher icon resource name.</li>
+<li><strong>C6 / H14</strong> — Restrict Maps/Firebase keys; stop treating JS Maps key as safe in HTML.</li>
+<li><strong>H1 / H2 / H6</strong> — Time Off pagination, submit lock, shared leave-type cache.</li>
+<li><strong>H3 / H4 / H16</strong> — Task Map: don’t rebuild on every focus; throttle GPS; abort HTTP.</li>
+<li><strong>H5</strong> — Abort Task Routing GETs; fix refresh cancellation.</li>
+<li><strong>H9</strong> — Safe API error copy.</li>
+<li><strong>H12</strong> — Check-in time zone.</li>
+<li><strong>H18</strong> — Remove or implement Get Help.</li>
+</ol>
+<h3>7.2 Fix before production (Medium)</h3>
+<p>M2 resume prompt, M4 GPS race, M5/M6 pagination caps, M7/M8 double-submit, M9 avatar size, M10 clock interval, M11 notification channel, M19 camera gate on Time Off, M21/M22 focus refetch, M23 silent session errors, M24 kebab, login email format, ProGuard (L3) if you ship obfuscation.</p>
+<h3>7.3 Improvements (Low)</h3>
+<p>Remove unused MapLibre / RN Maps / Nitro Image / new-app-screen. Split <code>apiClient.ts</code>. Tests for auth interceptor and attendance TTL. Optional in-app theme. Tablet width. Deep links if notifications should open a task.</p>
+<h3>7.4 Suggested PR split</h3>
+<ol>
+<li>C5, C4/logs, H2, H18, H17, Manifest backup (small, safe)</li>
+<li>C1 navigation + H9 errors</li>
+<li>Time Off H1/H6 + kebab</li>
+<li>Task Routing H5 + Task Map H3/H4/H16 + Home H7</li>
+<li>Check-in timezone + access gate + session toast</li>
+<li>Later epic: <strong>C2 background GPS</strong> + offline queue</li>
+</ol>
+<hr/>
+<h2>8. Appendix — Agent fix prompt</h2>
+<p>Copy the block below into a new Agent chat when you want implementation. Do <strong>not</strong> implement full native background GPS (C2) in the first pass unless explicitly requested.</p>
+<pre><code>You are working in the React Native CLI app at:
+/home/deep-patel/Application123/eb_geoemployee_tracker_mobile
+
+Do NOT change business rules unless required to fix a bug.
+Do NOT print or commit secrets (tokens, Maps keys, Firebase keys). Mask them.
+Do NOT implement full native background GPS in the first pass unless I say so — that is a large follow-up (C2).
+Prefer small, reviewable diffs. Match existing code style.
+
+## Context
+- RN 0.86 / React 19, Redux Toolkit, Axios (15s default timeout), Odoo REST.
+- Tokens in AsyncStorage. Single native stack (not auth-gated).
+- Field tracking uses JS setInterval. Maps use WebView + company Google JS key from GET /field/map-config.
+
+## Fix in this pass (required)
+
+### C1 — Auth failure must leave the app
+Files: App.tsx, AppNavigator.tsx, authSessionBridge
+When refresh fails / onAuthFailure runs, reset navigation to Fetch URL (same as Settings logout). Do not leave the user on Home/tasks with a null token.
+Keep a navigationRef and reset it from onAuthFailure (or subscribe to logout and reset).
+
+### C5 — Android icon
+File: android/app/src/main/AndroidManifest.xml
+Change android:icon from &quot;@mipmap /ic_launcher&quot; (space) to &quot;@mipmap/ic_launcher&quot;.
+
+### C3 — Backup + tokens (minimal)
+- Set android:allowBackup=&quot;false&quot; on the application tag.
+- Do not invent a full Keychain migration unless it is small and consistent; if you add encrypted storage, keep loadSession/saveSession/clearSession working for existing users.
+
+### C4 + H8 + TaskMap/TaskRouting/Location production logs
+Remove or wrap in `if (__DEV__)`:
+- locationTrackingService.ts coordinate logs
+- apiClient.ts [TimeOff] console.logs
+- TaskMapScreen / TaskRoutingScreen unguarded console.logs that include PII/coords/task names
+Do not log tokens, passwords, or map API keys.
+
+### H9 — User-facing API errors
+apiClient.ts extractErrorMessage + getAuthErrorMessage:
+Never show raw Axios messages or unmapped backend strings. Map 401/403/404/409/422/429/5xx/timeout/network to existing AUTH_ERROR_MESSAGES (add keys if needed).
+
+### H2 — Time off double submit
+TimeOffRequestScreen handleSubmit:
+Lock immediately with a ref (and setSubmitting) BEFORE validation async work. Ignore extra taps. Keep existing validation and attachment behavior (leave created even if attach fails is OK, but do not create two leaves).
+
+### H1 — Time off list pagination
+TimeOffCalendarScreen currently uses fetchHrLeaves default limit 20.
+Load all pages or add load-more until the API has no more rows. Cancel with AbortController (already used). Do not break filters/chips.
+
+### H6 — Duplicate Time Off APIs
+TimeOffCalendarScreen (focus) and TimeOffRequestScreen both fetch hr.leave.type and hr.leave.
+Add a small in-memory cache (module-level or existing store) with short TTL so Request reuses Calendar data when navigating Calendar → Request. Still refetch after successful submit.
+
+### H5 — Task routing abort
+TaskRoutingScreen loadTasks:
+Use AbortController. handleRefresh must NOT use loadTasks(() =&gt; false). Cancel on unmount and when chip/date/page changes.
+
+### H3 + H16 + H4 (Task Map) — do not over-refactor the whole 2000-line file
+TaskMapScreen:
+- Do not full-bootstrap (task-detail + map-config + rebuild HTML) on every focus. Bootstrap once per taskId; on later focus only resume GPS watch if needed.
+- Pass AbortSignal into fetchFieldTaskDetail, fetchFieldMapConfig, fetchFieldDirections; abort on blur.
+- Soften watchPosition: distanceFilter ~10, interval ~3000, fastestInterval ~2000 (keep cleanup on blur).
+- Keep existing start/arrive/cancel/pause behavior.
+
+### H7 — Home resume duplicate task-detail
+HomeScreen fetches task detail then opens TaskMap which fetches again.
+Pass enough params so TaskMap can skip the first detail fetch if data is already present, OR a tiny session cache keyed by taskId with short TTL. Do not break resume → TaskCapture vs TaskMap routing.
+
+### H12 — Check-in timezone
+CheckInScreen formatTimeLabel / formatTotalHours:
+Stop blindly appending &quot;Z&quot;. Display times consistently with how Odoo sends them (same approach as GeoHistoryDayScreen formatClock if that is correct). Worked hours must not jump by timezone offset.
+
+### H18 — Get Help
+HomeScreen: either hide Get Help or wire it to a real URL/screen. Do not leave onPress={() =&gt; {}}.
+
+### H21 / H17 — Client min tracking interval
+locationTrackingService: raise MIN_TRACKING_INTERVAL_SECONDS to at least 10 (or 15). Do not allow 1s uploads.
+
+### M19 — Access gate too wide (if easy)
+useAccessGateMonitor is enabled for every screen after splash, including Time Off.
+Only enforce GPS+camera on field/camera screens (Home optional, CheckIn, DefaultRoute, TaskMap, TaskCapture, Selfie, ViewDetails, Geo). Do not block Time Off / Attendance / Settings / Profile on camera.
+
+### M24 — Time Off kebab
+TimeOffCalendarScreen: hide the more-vert button until it has a real action (or implement cancel if the API already supports it — do not invent cancel API).
+
+### M23 — Silent session sync failure
+attendanceStorage syncAttendanceFromServerNetwork: on network/API failure, keep local fallback but surface a toast once (or return a flag) so Home/CheckIn can show “Could not refresh attendance” without looping toasts.
+
+### C6 — Maps key (do not break maps)
+Do not hardcode a Maps key. Keep fetching map-config.
+Add a code comment that the key must be restricted in Google Cloud.
+Do not log the key (TaskMap already logs keyLength — keep length only, and only in __DEV__).
+
+## Explicitly OUT OF SCOPE for this pass (unless leftover is tiny)
+- C2 full background GPS / Android foreground service / iOS Always location (document a TODO in locationTrackingService only).
+- H10 full offline point queue (optional small TODO).
+- Removing unused npm packages (MapLibre, react-native-maps, nitro-image) — do it only if you have time at the end and the app still builds conceptually; do not break autolinking mid-fix.
+- Rewriting apiClient.ts into many files.
+- Changing Odoo backend.
+
+## Verification
+- Typecheck / lint the files you touch.
+- Confirm AndroidManifest icon has no space.
+- Confirm login still works: Fetch URL → Login → Home.
+- Confirm 401 refresh failure would reset to Fetch URL (code path).
+- Confirm Time Off submit cannot fire twice.
+- Confirm Task Routing aborts in-flight GET on unmount.
+- Confirm Task Map does not rebuild HTML on every blur/focus of the same task.
+
+When done, list files changed and which bug IDs are fixed vs still open (especially C2, C3 encryption, H10).</code></pre>
+<hr/>
+<h2>9. Document control</h2>
+<table><thead><tr>
+<th>Field</th>
+<th>Value</th>
+</tr></thead><tbody>
+<tr>
+<td>Title</td>
+<td>Geo Employee Tracker — Complete QA &amp; Bug Audit Report</td>
+</tr>
+<tr>
+<td>Version</td>
+<td>1.0</td>
+</tr>
+<tr>
+<td>Date</td>
+<td>14 August 2026</td>
+</tr>
+<tr>
+<td>Method</td>
+<td>Static code review of the React Native CLI application</td>
+</tr>
+<tr>
+<td>Code modified</td>
+<td>None (audit only)</td>
+</tr>
+<tr>
+<td>Related source</td>
+<td><code>docs/QA_Audit_Report.md</code></td>
+</tr>
+</tbody></table>
+<p>End of report.</p>
+</body>
+</html>
