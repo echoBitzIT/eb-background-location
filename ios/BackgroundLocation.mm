@@ -1,5 +1,6 @@
 #import "BackgroundLocation.h"
 #import <React/RCTBridge.h>
+#import <CoreLocation/CoreLocation.h>
 
 #if __has_include("BackgroundLocation-Swift.h")
 #import "BackgroundLocation-Swift.h"
