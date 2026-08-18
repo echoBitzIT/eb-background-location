@@ -1,6 +1,6 @@
 {
   "name": "@echobitz_it/react-native-background-location",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "React Native TurboModule for background GPS tracking using Android Foreground Service and iOS CLLocationManager",
   "main": "./lib/module/index.js",
   "types": "./lib/typescript/src/index.d.ts",
