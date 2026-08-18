@@ -1,71 +1,182 @@
 {
-  "name": "eb_geoemployee_tracker_mobile",
-  "version": "0.0.1",
-  "private": true,
-  "scripts": {
-    "android": "react-native run-android",
-    "ios": "react-native run-ios",
-    "lint": "eslint .",
-    "start": "react-native start",
-    "test": "jest"
+  "name": "@eb/react-native-background-location",
+  "version": "0.1.0",
+  "description": "React Native TurboModule for background GPS tracking using Android Foreground Service and iOS CLLocationManager",
+  "main": "./lib/module/index.js",
+  "types": "./lib/typescript/src/index.d.ts",
+  "exports": {
+    ".": {
+      "react-native-background-location-source": "./src/index.tsx",
+      "types": "./lib/typescript/src/index.d.ts",
+      "default": "./lib/module/index.js"
+    },
+    "./package.json": "./package.json"
   },
-  "dependencies": {
-    "@maplibre/maplibre-react-native": "^11.3.6",
-    "@notifee/react-native": "^9.1.8",
-    "@react-native-async-storage/async-storage": "^3.1.1",
-    "@react-native-community/datetimepicker": "^9.1.0",
-    "@react-native-community/netinfo": "^12.0.1",
-    "@react-native-documents/picker": "^12.0.2",
-    "@react-native-documents/viewer": "^4.0.1",
-    "@react-native-firebase/app": "^23.8.8",
-    "@react-native-firebase/messaging": "^23.8.8",
-    "@react-native-vector-icons/material-icons": "^13.1.2",
-    "@react-native/new-app-screen": "0.86.0",
-    "@react-navigation/native": "^7.3.8",
-    "@react-navigation/native-stack": "^7.17.10",
-    "@reduxjs/toolkit": "^2.12.0",
-    "axios": "^1.18.1",
-    "react": "19.2.3",
-    "react-native": "0.86.0",
-    "react-native-compressor": "^2.0.3",
-    "react-native-geolocation-service": "^5.3.1",
-    "react-native-image-picker": "^8.2.1",
-    "react-native-linear-gradient": "^2.8.3",
-    "react-native-maps": "^1.29.0",
-    "react-native-nitro-image": "^0.15.1",
-    "react-native-nitro-modules": "^0.36.1",
-    "react-native-permissions": "^5.6.0",
-    "react-native-responsive-screen": "^1.4.2",
-    "react-native-safe-area-context": "^5.8.0",
-    "react-native-screens": "^4.26.0",
-    "react-native-toast-message": "^2.4.0",
-    "react-native-vector-icons": "^10.3.0",
-    "react-native-vision-camera": "^5.1.1",
-    "react-native-webview": "^14.0.1",
-    "react-redux": "^9.3.0"
+  "files": [
+    "src",
+    "lib",
+    "android",
+    "ios",
+    "cpp",
+    "*.podspec",
+    "react-native.config.js",
+    "!ios/build",
+    "!android/build",
+    "!android/gradle",
+    "!android/gradlew",
+    "!android/gradlew.bat",
+    "!android/local.properties",
+    "!**/__tests__",
+    "!**/__fixtures__",
+    "!**/__mocks__",
+    "!**/.*"
+  ],
+  "scripts": {
+    "example": "yarn workspace react-native-background-location-example",
+    "clean": "del-cli android/build example/android/build example/android/app/build example/ios/build lib",
+    "prepare": "bob build",
+    "typecheck": "tsc",
+    "lint": "eslint \"**/*.{js,ts,tsx}\"",
+    "test": "jest",
+    "release": "release-it --only-version",
+    "web": "vite",
+    "build:web": "vite build"
+  },
+  "keywords": [
+    "react-native",
+    "ios",
+    "android"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/example/eb-background-location.git"
+  },
+  "author": "EB <dev@example.com> (https://example.com)",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/example/eb-background-location/issues"
+  },
+  "homepage": "https://github.com/example/eb-background-location#readme",
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/"
   },
   "devDependencies": {
-    "@babel/core": "^7.25.2",
-    "@babel/preset-env": "^7.25.3",
-    "@babel/runtime": "^7.25.0",
-    "@react-native-community/cli": "20.1.0",
-    "@react-native-community/cli-platform-android": "20.1.0",
-    "@react-native-community/cli-platform-ios": "20.1.0",
-    "@react-native/babel-preset": "0.86.0",
-    "@react-native/eslint-config": "0.86.0",
-    "@react-native/metro-config": "0.86.0",
-    "@react-native/typescript-config": "0.86.0",
-    "@types/jest": "^29.5.13",
+    "@commitlint/config-conventional": "^21.0.2",
+    "@eslint/compat": "^2.1.0",
+    "@eslint/eslintrc": "^3.3.5",
+    "@eslint/js": "^10.0.1",
+    "@jest/globals": "^29.7.0",
+    "@react-native/babel-preset": "0.85.0",
+    "@react-native/eslint-config": "0.85.0",
+    "@react-native/jest-preset": "0.85.0",
+    "@release-it/conventional-changelog": "^11.0.1",
     "@types/react": "^19.2.0",
-    "@types/react-native-vector-icons": "^6.4.18",
-    "@types/react-test-renderer": "^19.1.0",
-    "eslint": "^8.19.0",
-    "jest": "^29.6.3",
-    "prettier": "2.8.8",
-    "react-test-renderer": "19.2.3",
-    "typescript": "^5.8.3"
+    "commitlint": "^21.0.2",
+    "del-cli": "^7.0.0",
+    "eslint": "^9.39.4",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-ft-flow": "^3.0.11",
+    "eslint-plugin-prettier": "^5.5.6",
+    "jest": "^29.7.0",
+    "lefthook": "^2.1.9",
+    "prettier": "^3.8.3",
+    "react": "19.2.3",
+    "react-native": "0.85.0",
+    "react-native-builder-bob": "^0.41.0",
+    "react-native-web": "~0.21.2",
+    "release-it": "^20.2.0",
+    "turbo": "^2.9.16",
+    "typescript": "^6.0.3"
   },
-  "engines": {
-    "node": ">= 22.11.0"
+  "peerDependencies": {
+    "react": "*",
+    "react-native": "*"
+  },
+  "workspaces": [
+    "example"
+  ],
+  "packageManager": "yarn@4.11.0",
+  "react-native-builder-bob": {
+    "source": "src",
+    "output": "lib",
+    "targets": [
+      [
+        "module",
+        {
+          "esm": true
+        }
+      ],
+      [
+        "typescript",
+        {
+          "project": "tsconfig.build.json"
+        }
+      ]
+    ]
+  },
+  "codegenConfig": {
+    "name": "BackgroundLocationSpec",
+    "type": "modules",
+    "jsSrcsDir": "src",
+    "android": {
+      "javaPackageName": "com.backgroundlocation"
+    }
+  },
+  "prettier": {
+    "quoteProps": "consistent",
+    "singleQuote": true,
+    "tabWidth": 2,
+    "trailingComma": "es5",
+    "useTabs": false
+  },
+  "jest": {
+    "preset": "@react-native/jest-preset",
+    "testEnvironmentOptions": {
+      "customExportConditions": [
+        "require",
+        "react-native",
+        "<%- project.sourceCondition -%>"
+      ]
+    },
+    "modulePathIgnorePatterns": [
+      "<rootDir>/example/node_modules",
+      "<rootDir>/lib/"
+    ]
+  },
+  "commitlint": {
+    "extends": [
+      "@commitlint/config-conventional"
+    ]
+  },
+  "release-it": {
+    "git": {
+      "commitMessage": "chore: release ${version}",
+      "tagName": "v${version}"
+    },
+    "npm": {
+      "publish": true
+    },
+    "github": {
+      "release": true
+    },
+    "plugins": {
+      "@release-it/conventional-changelog": {
+        "preset": {
+          "name": "angular"
+        }
+      }
+    }
+  },
+  "create-react-native-library": {
+    "type": "turbo-module",
+    "languages": "kotlin-objc",
+    "tools": [
+      "eslint",
+      "jest",
+      "lefthook",
+      "release-it",
+      "vite"
+    ],
+    "version": "0.63.0"
   }
 }

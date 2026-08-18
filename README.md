@@ -1,97 +1,98 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+# @eb/react-native-background-location
 
-# Getting Started
+Standalone React Native **TurboModule** for background GPS tracking.
 
-> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
+- **Android:** Foreground Service (`location`) + Fused Location Provider
+- **iOS:** `CLLocationManager` with Always + background updates
+- **Not** wired to any host product app — use the `example/` harness to test
 
-## Step 1: Start Metro
+Inspired by patterns in [@gabriel-sisjr/react-native-background-location](https://github.com/gabriel-sisjr/react-native-background-location) (MIT). This package is an independent slim implementation (no geofencing / Expo / trip DB).
 
-First, you will need to run **Metro**, the JavaScript build tool for React Native.
+## Requirements
 
-To start the Metro dev server, run the following command from the root of your React Native project:
+| Requirement | Version |
+| --- | --- |
+| React Native | >= 0.73 (New Architecture) |
+| Android minSdk | 24 |
+| iOS | 16+ |
 
-```sh
-# Using npm
-npm start
+## Install (local)
 
-# OR using Yarn
-yarn start
+```bash
+cd /home/deep-patel/Application123/eb-background-location
+yarn
 ```
 
-## Step 2: Build and run your app
+## API
 
-With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
+```ts
+import {
+  requestLocationPermission,
+  requestNotificationPermission,
+  startTracking,
+  stopTracking,
+  isTracking,
+  addLocationListener,
+  addErrorListener,
+  addWarningListener,
+} from 'react-native-background-location';
 
-### Android
+await requestNotificationPermission();
+await requestLocationPermission(false); // When In Use → Always / Background
 
-```sh
-# Using npm
-npm run android
+await startTracking('session-1', {
+  intervalMs: 30000,
+  fastestIntervalMs: 15000,
+  distanceFilterM: 25,
+  notificationTitle: 'Tracking active',
+  notificationText: 'Sharing location in the background',
+});
 
-# OR using Yarn
-yarn android
+const remove = addLocationListener((point) => {
+  console.log(point.latitude, point.longitude, point.accuracy);
+});
+
+await stopTracking();
+remove();
 ```
 
-### iOS
+### Events
 
-For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
+| Event | Payload |
+| --- | --- |
+| `location` | `{ sessionId, latitude, longitude, accuracy, speed, heading, altitude, timestamp }` |
+| `error` | `{ code, message, sessionId? }` |
+| `warning` | `{ code, message, sessionId? }` |
 
-The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
+Lat/lng are **numbers**.
 
-```sh
-bundle install
+## Example app
+
+```bash
+yarn
+yarn example android
+# or
+yarn example ios
 ```
 
-Then, and every time you update your native dependencies, run:
+### Manual test checklist
 
-```sh
-bundle exec pod install
+1. Open example → **Permissions** → grant Fine / Always / Notifications.
+2. Tap **Start** — Android shows a persistent notification.
+3. Press **Home** for 2+ minutes — points / logs should keep updating.
+4. Open another app — tracking continues.
+5. Lock the phone — tracking continues.
+6. Tap **Stop** — notification clears; no new points.
+
+## Project layout
+
+```text
+src/           JS API + TurboModule Spec
+android/       FGS + Fused Location + TrackingStateStore
+ios/           Swift CLLocationManager wrapper + ObjC++ TurboModule
+example/       Standalone test app (not a product app)
 ```
 
-For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
+## License
 
-```sh
-# Using npm
-npm run ios
-
-# OR using Yarn
-yarn ios
-```
-
-If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
-
-This is one way to run your app — you can also build it directly from Android Studio or Xcode.
-
-## Step 3: Modify your app
-
-Now that you have successfully run the app, let's make changes!
-
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
-
-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
-
-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
-
-## Congratulations! :tada:
-
-You've successfully run and modified your React Native App. :partying_face:
-
-### Now what?
-
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
-
-# Troubleshooting
-
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
-
-# Learn More
-
-To learn more about React Native, take a look at the following resources:
-
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+MIT
