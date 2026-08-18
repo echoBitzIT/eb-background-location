@@ -1,4 +1,4 @@
-package com.backgroundlocation
+package com.echobitzit.backgroundlocation
 
 import android.Manifest
 import android.content.pm.PackageManager

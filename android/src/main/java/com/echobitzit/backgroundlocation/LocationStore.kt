@@ -1,4 +1,4 @@
-package com.backgroundlocation
+package com.echobitzit.backgroundlocation
 
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase

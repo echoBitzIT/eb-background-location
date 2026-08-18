@@ -11,10 +11,13 @@ Pod::Spec.new do |s|
   s.authors      = package["author"]
 
   s.platforms    = { :ios => min_ios_version_supported }
-  s.source       = { :git => "https://github.com/example/eb-background-location.git", :tag => "#{s.version}" }
+  s.source       = { :git => "https://github.com/echoBitzIT/eb-background-location.git", :tag => "#{s.version}" }
 
   s.source_files = "ios/**/*.{h,m,mm,swift,cpp}"
   s.private_header_files = "ios/**/*.h"
+  s.resource_bundles = {
+    "BackgroundLocationPrivacy" => ["ios/PrivacyInfo.xcprivacy"]
+  }
   s.frameworks = "CoreLocation"
   s.library = "sqlite3"
 

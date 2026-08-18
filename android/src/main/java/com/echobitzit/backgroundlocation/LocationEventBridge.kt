@@ -1,4 +1,4 @@
-package com.backgroundlocation
+package com.echobitzit.backgroundlocation
 
 import com.facebook.react.bridge.Arguments
 import com.facebook.react.bridge.ReactApplicationContext
@@ -47,7 +47,7 @@ object LocationEventBridge {
       else putNull("altitude")
       putDouble("timestamp", timestamp.toDouble())
     }
-    Log.d(TAG, "emit location session=$sessionId lat=$latitude lng=$longitude acc=$accuracy")
+    Log.d(TAG, "emit location session=$sessionId")
     emit("location", map)
   }
 

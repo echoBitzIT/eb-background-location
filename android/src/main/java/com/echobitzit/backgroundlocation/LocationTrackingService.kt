@@ -1,4 +1,4 @@
-package com.backgroundlocation
+package com.echobitzit.backgroundlocation
 
 import android.app.Notification
 import android.app.NotificationChannel
@@ -237,10 +237,7 @@ class LocationTrackingService : Service() {
       timestamp = location.time,
     )
 
-    Log.d(
-      TAG,
-      "FGS emit location session=$sid lat=${location.latitude} lng=${location.longitude} acc=$accuracy"
-    )
+    Log.d(TAG, "FGS emit location session=$sid")
     LocationEventBridge.emitLocation(
       sessionId = sid,
       latitude = location.latitude,
@@ -324,7 +321,7 @@ class LocationTrackingService : Service() {
     private const val NOTIFICATION_ID = 0xEB10
     private const val AVAILABILITY_DEBOUNCE_MS = 2000L
 
-    const val ACTION_STOP = "com.backgroundlocation.ACTION_STOP"
+    const val ACTION_STOP = "com.echobitzit.backgroundlocation.ACTION_STOP"
     const val EXTRA_SESSION_ID = "session_id"
     const val EXTRA_OPTIONS_JSON = "options_json"
 

@@ -1,4 +1,4 @@
-package com.backgroundlocation
+package com.echobitzit.backgroundlocation
 
 import com.facebook.react.BaseReactPackage
 import com.facebook.react.bridge.NativeModule

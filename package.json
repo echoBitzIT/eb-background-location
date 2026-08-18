@@ -1,5 +1,5 @@
 {
-  "name": "@eb/react-native-background-location",
+  "name": "@echobitz_it/react-native-background-location",
   "version": "0.1.0",
   "description": "React Native TurboModule for background GPS tracking using Android Foreground Service and iOS CLLocationManager",
   "main": "./lib/module/index.js",
@@ -39,26 +39,31 @@
     "lint": "eslint \"**/*.{js,ts,tsx}\"",
     "test": "jest",
     "release": "release-it --only-version",
-    "web": "vite",
-    "build:web": "vite build"
+    "prepublishOnly": "yarn typecheck && yarn test && yarn lint"
   },
   "keywords": [
     "react-native",
     "ios",
-    "android"
+    "android",
+    "background-location",
+    "gps",
+    "geolocation",
+    "turbo-module",
+    "foreground-service"
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/example/eb-background-location.git"
+    "url": "git+https://github.com/echoBitzIT/eb-background-location.git"
   },
-  "author": "EB <dev@example.com> (https://example.com)",
+  "author": "EchoBitz IT <info@echobitzit.com>",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/example/eb-background-location/issues"
+    "url": "https://github.com/echoBitzIT/eb-background-location/issues"
   },
-  "homepage": "https://github.com/example/eb-background-location#readme",
+  "homepage": "https://github.com/echoBitzIT/eb-background-location#readme",
   "publishConfig": {
-    "registry": "https://registry.npmjs.org/"
+    "registry": "https://registry.npmjs.org/",
+    "access": "public"
   },
   "devDependencies": {
     "@commitlint/config-conventional": "^21.0.2",
@@ -89,8 +94,8 @@
     "typescript": "^6.0.3"
   },
   "peerDependencies": {
-    "react": "*",
-    "react-native": "*"
+    "react": ">=18.2.0",
+    "react-native": ">=0.73.0"
   },
   "workspaces": [
     "example"
@@ -119,7 +124,7 @@
     "type": "modules",
     "jsSrcsDir": "src",
     "android": {
-      "javaPackageName": "com.backgroundlocation"
+      "javaPackageName": "com.echobitzit.backgroundlocation"
     }
   },
   "prettier": {
@@ -135,7 +140,7 @@
       "customExportConditions": [
         "require",
         "react-native",
-        "<%- project.sourceCondition -%>"
+        "react-native-background-location-source"
       ]
     },
     "modulePathIgnorePatterns": [

@@ -27,6 +27,12 @@ export {
   addWarningListener,
 } from './events';
 
+function debugLog(...args: unknown[]): void {
+  if (__DEV__) {
+    console.log('[EBBgLoc]', ...args);
+  }
+}
+
 const DEFAULT_OPTIONS: Required<
   Pick<
     TrackingOptions,
@@ -119,7 +125,7 @@ export async function startTracking(
     throw new Error('sessionId is required');
   }
   const spec = toSpec(options);
-  console.log('[EBBgLoc]', '[Lib] startTracking', { sessionId, options: spec });
+  debugLog('[Lib] startTracking', { sessionId, options: spec });
   await NativeBackgroundLocation.startTracking(sessionId, spec);
 }
 
@@ -127,7 +133,7 @@ export async function startTracking(
  * Stops tracking and tears down the Android foreground service / iOS updates.
  */
 export async function stopTracking(): Promise<void> {
-  console.log('[EBBgLoc]', '[Lib] stopTracking');
+  debugLog('[Lib] stopTracking');
   await NativeBackgroundLocation.stopTracking();
 }
 
@@ -140,7 +146,7 @@ export async function isTracking(): Promise<TrackingStatus> {
     active: Boolean(result.active),
     sessionId: result.sessionId,
   };
-  console.log('[EBBgLoc]', '[Lib] isTracking', status);
+  debugLog('[Lib] isTracking', status);
   return status;
 }
 
@@ -157,7 +163,7 @@ export async function getLocationPermissionStatus(): Promise<PermissionResult> {
     status: mapPermissionStatus(result.status),
     canRequestAgain: Boolean(result.canRequestAgain),
   };
-  console.log('[EBBgLoc]', '[Lib] getLocationPermissionStatus', mapped);
+  debugLog('[Lib] getLocationPermissionStatus', mapped);
   return mapped;
 }
 
@@ -173,7 +179,7 @@ export async function getSessionLocations(
     limit
   );
   const points = rows.map((row) => mapLocationPoint(row));
-  console.log('[EBBgLoc]', '[Lib] getSessionLocations', {
+  debugLog('[Lib] getSessionLocations', {
     sessionId,
     count: points.length,
   });
@@ -184,7 +190,7 @@ export async function getSessionLocations(
  * Clears persisted locations for one session or all sessions.
  */
 export async function clearSessionLocations(sessionId?: string): Promise<void> {
-  console.log('[EBBgLoc]', '[Lib] clearSessionLocations', { sessionId });
+  debugLog('[Lib] clearSessionLocations', { sessionId });
   if (sessionId != null && sessionId.length > 0) {
     await NativeBackgroundLocation.clearSessionLocations(sessionId);
   } else {
@@ -200,7 +206,7 @@ export async function clearSessionLocations(sessionId?: string): Promise<void> {
 export async function requestLocationPermission(
   foregroundOnly: boolean = false
 ): Promise<PermissionResult> {
-  console.log('[EBBgLoc]', '[Lib] requestLocationPermission', {
+  debugLog('[Lib] requestLocationPermission', {
     foregroundOnly,
     platform: Platform.OS,
   });
@@ -214,7 +220,7 @@ export async function requestLocationPermission(
     status: mapPermissionStatus(result.status),
     canRequestAgain: Boolean(result.canRequestAgain),
   };
-  console.log('[EBBgLoc]', '[Lib] requestLocationPermission result', mapped);
+  debugLog('[Lib] requestLocationPermission result', mapped);
   return mapped;
 }
 
@@ -224,7 +230,7 @@ export async function requestLocationPermission(
 export async function requestNotificationPermission(): Promise<
   'granted' | 'denied'
 > {
-  console.log('[EBBgLoc]', '[Lib] requestNotificationPermission', {
+  debugLog('[Lib] requestNotificationPermission', {
     platform: Platform.OS,
     version: Platform.Version,
   });
@@ -234,29 +240,18 @@ export async function requestNotificationPermission(): Promise<
     );
     const status =
       result === PermissionsAndroid.RESULTS.GRANTED ? 'granted' : 'denied';
-    console.log(
-      '[EBBgLoc]',
-      '[Lib] requestNotificationPermission result',
-      status
-    );
+    debugLog('[Lib] requestNotificationPermission result', status);
     return status;
   }
 
   if (Platform.OS === 'android') {
-    console.log(
-      '[EBBgLoc]',
-      '[Lib] requestNotificationPermission result granted (pre-33)'
-    );
+    debugLog('[Lib] requestNotificationPermission result granted (pre-33)');
     return 'granted';
   }
 
   const status = await NativeBackgroundLocation.requestNotificationPermission();
   const mapped = status === 'granted' ? 'granted' : 'denied';
-  console.log(
-    '[EBBgLoc]',
-    '[Lib] requestNotificationPermission result',
-    mapped
-  );
+  debugLog('[Lib] requestNotificationPermission result', mapped);
   return mapped;
 }
 
@@ -266,11 +261,11 @@ async function requestAndroidLocationPermission(
   const fine = await PermissionsAndroid.request(
     PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION
   );
-  console.log('[EBBgLoc]', '[Lib] Android ACCESS_FINE_LOCATION', fine);
+  debugLog('[Lib] Android ACCESS_FINE_LOCATION', fine);
   const coarse = await PermissionsAndroid.request(
     PermissionsAndroid.PERMISSIONS.ACCESS_COARSE_LOCATION
   );
-  console.log('[EBBgLoc]', '[Lib] Android ACCESS_COARSE_LOCATION', coarse);
+  debugLog('[Lib] Android ACCESS_COARSE_LOCATION', coarse);
 
   const fgGranted =
     fine === PermissionsAndroid.RESULTS.GRANTED ||
@@ -284,11 +279,7 @@ async function requestAndroidLocationPermission(
       status: blocked ? 'blocked' : 'denied',
       canRequestAgain: !blocked,
     };
-    console.log(
-      '[EBBgLoc]',
-      '[Lib] Android location permission result',
-      result
-    );
+    debugLog('[Lib] Android location permission result', result);
     return result;
   }
 
@@ -297,33 +288,21 @@ async function requestAndroidLocationPermission(
       status: 'granted',
       canRequestAgain: true,
     };
-    console.log(
-      '[EBBgLoc]',
-      '[Lib] Android location permission result',
-      result
-    );
+    debugLog('[Lib] Android location permission result', result);
     return result;
   }
 
   const background = await PermissionsAndroid.request(
     PermissionsAndroid.PERMISSIONS.ACCESS_BACKGROUND_LOCATION
   );
-  console.log(
-    '[EBBgLoc]',
-    '[Lib] Android ACCESS_BACKGROUND_LOCATION',
-    background
-  );
+  debugLog('[Lib] Android ACCESS_BACKGROUND_LOCATION', background);
 
   if (background === PermissionsAndroid.RESULTS.GRANTED) {
     const result: PermissionResult = {
       status: 'granted',
       canRequestAgain: true,
     };
-    console.log(
-      '[EBBgLoc]',
-      '[Lib] Android location permission result',
-      result
-    );
+    debugLog('[Lib] Android location permission result', result);
     return result;
   }
 
@@ -333,7 +312,7 @@ async function requestAndroidLocationPermission(
     status: blocked ? 'blocked' : 'whenInUse',
     canRequestAgain: !blocked,
   };
-  console.log('[EBBgLoc]', '[Lib] Android location permission result', result);
+  debugLog('[Lib] Android location permission result', result);
   return result;
 }
 
@@ -351,7 +330,7 @@ async function getAndroidLocationPermissionStatus(): Promise<PermissionResult> {
       status: 'denied',
       canRequestAgain: true,
     };
-    console.log('[EBBgLoc]', '[Lib] getLocationPermissionStatus', result);
+    debugLog('[Lib] getLocationPermissionStatus', result);
     return result;
   }
 
@@ -360,7 +339,7 @@ async function getAndroidLocationPermissionStatus(): Promise<PermissionResult> {
       status: 'granted',
       canRequestAgain: true,
     };
-    console.log('[EBBgLoc]', '[Lib] getLocationPermissionStatus', result);
+    debugLog('[Lib] getLocationPermissionStatus', result);
     return result;
   }
 
@@ -371,6 +350,6 @@ async function getAndroidLocationPermissionStatus(): Promise<PermissionResult> {
   const result: PermissionResult = background
     ? { status: 'granted', canRequestAgain: true }
     : { status: 'whenInUse', canRequestAgain: true };
-  console.log('[EBBgLoc]', '[Lib] getLocationPermissionStatus', result);
+  debugLog('[Lib] getLocationPermissionStatus', result);
   return result;
 }

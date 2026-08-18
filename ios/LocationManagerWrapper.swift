@@ -6,7 +6,7 @@ import CoreLocation
 
   private var locationManager: CLLocationManager?
   private var permissionManager: CLLocationManager?
-  private let queue = DispatchQueue(label: "com.backgroundlocation.manager")
+  private let queue = DispatchQueue(label: "com.echobitzit.backgroundlocation.manager")
 
   private var isTrackingFlag = false
   private var currentSessionId: String?
@@ -290,7 +290,6 @@ import CoreLocation
         payload["speed"] = speed ?? NSNull()
         payload["heading"] = heading ?? NSNull()
         payload["altitude"] = altitude
-        print("[EBBgLoc] GPS \(location.coordinate.latitude),\(location.coordinate.longitude) acc=\(accuracy)")
         self.onLocationUpdate?(payload)
       }
     }

@@ -4,7 +4,7 @@ import SQLite3
 @objc public class LocationStore: NSObject {
   @objc public static let shared = LocationStore()
 
-  private let queue = DispatchQueue(label: "com.backgroundlocation.locationstore")
+  private let queue = DispatchQueue(label: "com.echobitzit.backgroundlocation.locationstore")
   private var db: OpaquePointer?
   private let maxRowsPerSession = 10_000
 

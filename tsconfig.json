@@ -2,7 +2,7 @@
   "compilerOptions": {
     "rootDir": ".",
     "paths": {
-      "react-native-background-location": ["./src/index"]
+      "@echobitz_it/react-native-background-location": ["./src/index"]
     },
     "allowUnreachableCode": false,
     "allowUnusedLabels": false,

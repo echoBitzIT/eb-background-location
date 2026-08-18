@@ -1,4 +1,4 @@
-package com.backgroundlocation
+package com.echobitzit.backgroundlocation
 
 import android.annotation.SuppressLint
 import android.content.Context
@@ -53,10 +53,6 @@ class FusedLocationHelper(context: Context) {
       override fun onLocationResult(result: LocationResult) {
         Log.d(TAG, "FusedLocation onLocationResult count=${result.locations.size}")
         for (location in result.locations) {
-          Log.d(
-            TAG,
-            "GPS ${location.latitude},${location.longitude} acc=${location.accuracy}"
-          )
           onLocation(location)
         }
       }

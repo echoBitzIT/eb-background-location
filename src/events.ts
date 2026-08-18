@@ -8,6 +8,12 @@ import type {
 
 const emitter = new NativeEventEmitter(NativeBackgroundLocation);
 
+function debugLog(...args: unknown[]): void {
+  if (__DEV__) {
+    console.log('[EBBgLoc]', ...args);
+  }
+}
+
 function asRecord(value: unknown): Record<string, unknown> {
   if (value != null && typeof value === 'object') {
     return value as Record<string, unknown>;
@@ -18,10 +24,10 @@ function asRecord(value: unknown): Record<string, unknown> {
 export function addLocationListener(
   callback: (point: LocationPoint) => void
 ): () => void {
-  console.log('[EBBgLoc]', '[Lib] addLocationListener');
+  debugLog('[Lib] addLocationListener');
   const sub: EmitterSubscription = emitter.addListener('location', (raw) => {
     const data = asRecord(raw);
-    console.log('[EBBgLoc]', '[Lib] raw location event', data);
+    debugLog('[Lib] location event');
     callback({
       sessionId: String(data.sessionId ?? ''),
       latitude: Number(data.latitude),
@@ -46,7 +52,7 @@ export function addLocationListener(
     });
   });
   return () => {
-    console.log('[EBBgLoc]', '[Lib] removeLocationListener');
+    debugLog('[Lib] removeLocationListener');
     sub.remove();
   };
 }
@@ -54,10 +60,10 @@ export function addLocationListener(
 export function addErrorListener(
   callback: (event: LocationErrorEvent) => void
 ): () => void {
-  console.log('[EBBgLoc]', '[Lib] addErrorListener');
+  debugLog('[Lib] addErrorListener');
   const sub: EmitterSubscription = emitter.addListener('error', (raw) => {
     const data = asRecord(raw);
-    console.log('[EBBgLoc]', '[Lib] raw error event', data);
+    debugLog('[Lib] error event', data.code);
     callback({
       code: String(data.code ?? 'UNKNOWN'),
       message: String(data.message ?? ''),
@@ -65,7 +71,7 @@ export function addErrorListener(
     });
   });
   return () => {
-    console.log('[EBBgLoc]', '[Lib] removeErrorListener');
+    debugLog('[Lib] removeErrorListener');
     sub.remove();
   };
 }
@@ -73,10 +79,10 @@ export function addErrorListener(
 export function addWarningListener(
   callback: (event: LocationWarningEvent) => void
 ): () => void {
-  console.log('[EBBgLoc]', '[Lib] addWarningListener');
+  debugLog('[Lib] addWarningListener');
   const sub: EmitterSubscription = emitter.addListener('warning', (raw) => {
     const data = asRecord(raw);
-    console.log('[EBBgLoc]', '[Lib] raw warning event', data);
+    debugLog('[Lib] warning event', data.code);
     callback({
       code: String(data.code ?? 'UNKNOWN'),
       message: String(data.message ?? ''),
@@ -84,7 +90,7 @@ export function addWarningListener(
     });
   });
   return () => {
-    console.log('[EBBgLoc]', '[Lib] removeWarningListener');
+    debugLog('[Lib] removeWarningListener');
     sub.remove();
   };
 }

@@ -24,7 +24,7 @@ import {
   type LocationPoint,
   type PermissionStatus,
   type TrackingOptions,
-} from '@eb/react-native-background-location';
+} from '@echobitz_it/react-native-background-location';
 import styles from './styles';
 
 type ConfigPreset = 'default' | 'high-accuracy' | 'balanced' | 'low-power';

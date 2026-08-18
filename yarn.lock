@@ -1766,9 +1766,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@eb/react-native-background-location@workspace:*, @eb/react-native-background-location@workspace:.":
+"@echobitz_it/react-native-background-location@workspace:*, @echobitz_it/react-native-background-location@workspace:.":
   version: 0.0.0-use.local
-  resolution: "@eb/react-native-background-location@workspace:."
+  resolution: "@echobitz_it/react-native-background-location@workspace:."
   dependencies:
     "@commitlint/config-conventional": "npm:^21.0.2"
     "@eslint/compat": "npm:^2.1.0"
@@ -1797,8 +1797,8 @@ __metadata:
     turbo: "npm:^2.9.16"
     typescript: "npm:^6.0.3"
   peerDependencies:
-    react: "*"
-    react-native: "*"
+    react: ">=18.2.0"
+    react-native: ">=0.73.0"
   languageName: unknown
   linkType: soft
 
@@ -10376,7 +10376,7 @@ __metadata:
     "@babel/core": "npm:^7.25.2"
     "@babel/preset-env": "npm:^7.25.3"
     "@babel/runtime": "npm:^7.25.0"
-    "@eb/react-native-background-location": "workspace:*"
+    "@echobitz_it/react-native-background-location": "workspace:*"
     "@react-native-community/cli": "npm:20.1.0"
     "@react-native-community/cli-platform-android": "npm:20.1.0"
     "@react-native-community/cli-platform-ios": "npm:20.1.0"
