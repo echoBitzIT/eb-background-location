@@ -20,7 +20,7 @@ import SQLite3
     }
   }
 
-  @objc public func insert(
+  public func insert(
     sessionId: String,
     latitude: Double,
     longitude: Double,
